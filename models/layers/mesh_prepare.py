@@ -5,8 +5,10 @@ import ntpath
 
 def fill_mesh(mesh2fill, file: str, opt):
     load_path = get_mesh_path(file, opt.num_aug)
+    file = r'E:\Omri\FinalProject\QuadMesh\ModelNet40\bathtub\train\bathtub_0004_manifold_clean_quad.obj'  # TODO: remove!!!
     if os.path.exists(load_path):
-        mesh_data = np.load(load_path, encoding='latin1', allow_pickle=True)
+        # mesh_data = np.load(load_path, encoding='latin1', allow_pickle=True)
+        mesh_data = from_scratch(file, opt)
     else:
         mesh_data = from_scratch(file, opt)
         np.savez_compressed(load_path, gemm_edges=mesh_data.gemm_edges, vs=mesh_data.vs, edges=mesh_data.edges,
@@ -76,9 +78,12 @@ def fill_from_file(mesh, file):
             vs.append([float(v) for v in splitted_line[1:4]])
         elif splitted_line[0] == 'f':
             face_vertex_ids = [int(c.split('/')[0]) for c in splitted_line[1:]]
-            assert len(face_vertex_ids) == 3
+            assert (len(face_vertex_ids) == 4 or len(face_vertex_ids) == 3)
             face_vertex_ids = [(ind - 1) if (ind >= 0) else (len(vs) + ind)
                                for ind in face_vertex_ids]
+            if len(face_vertex_ids) == 3:
+                # face_vertex_ids.append(-1)
+                continue
             faces.append(face_vertex_ids)
     f.close()
     vs = np.asarray(vs)
@@ -98,7 +103,7 @@ def remove_non_manifolds(mesh, faces):
             continue
         faces_edges = []
         is_manifold = False
-        for i in range(3):
+        for i in range(4):
             cur_edge = (face[i], face[(i + 1) % 3])
             if cur_edge in edges_set:
                 is_manifold = True
@@ -128,8 +133,8 @@ def build_gemm(mesh, faces, face_areas):
     nb_count = []
     for face_id, face in enumerate(faces):
         faces_edges = []
-        for i in range(3):
-            cur_edge = (face[i], face[(i + 1) % 3])
+        for i in range(4):
+            cur_edge = (face[i], face[(i + 1) % 4])
             faces_edges.append(cur_edge)
         for idx, edge in enumerate(faces_edges):
             edge = tuple(sorted(list(edge)))
@@ -137,23 +142,25 @@ def build_gemm(mesh, faces, face_areas):
             if edge not in edge2key:
                 edge2key[edge] = edges_count
                 edges.append(list(edge))
-                edge_nb.append([-1, -1, -1, -1])
-                sides.append([-1, -1, -1, -1])
+                edge_nb.append([-1, -1, -1, -1, -1, -1])
+                sides.append([-1, -1, -1, -1, -1, -1])
                 mesh.ve[edge[0]].append(edges_count)
                 mesh.ve[edge[1]].append(edges_count)
                 mesh.edge_areas.append(0)
                 nb_count.append(0)
                 edges_count += 1
-            mesh.edge_areas[edge2key[edge]] += face_areas[face_id] / 3
+            mesh.edge_areas[edge2key[edge]] += face_areas[face_id] / 4
         for idx, edge in enumerate(faces_edges):
             edge_key = edge2key[edge]
-            edge_nb[edge_key][nb_count[edge_key]] = edge2key[faces_edges[(idx + 1) % 3]]
-            edge_nb[edge_key][nb_count[edge_key] + 1] = edge2key[faces_edges[(idx + 2) % 3]]
-            nb_count[edge_key] += 2
+            edge_nb[edge_key][nb_count[edge_key]] = edge2key[faces_edges[(idx + 1) % 4]]
+            edge_nb[edge_key][nb_count[edge_key] + 1] = edge2key[faces_edges[(idx + 2) % 4]]
+            edge_nb[edge_key][nb_count[edge_key] + 2] = edge2key[faces_edges[(idx + 3) % 4]]
+            nb_count[edge_key] += 3
         for idx, edge in enumerate(faces_edges):
             edge_key = edge2key[edge]
-            sides[edge_key][nb_count[edge_key] - 2] = nb_count[edge2key[faces_edges[(idx + 1) % 3]]] - 1
-            sides[edge_key][nb_count[edge_key] - 1] = nb_count[edge2key[faces_edges[(idx + 2) % 3]]] - 2
+            sides[edge_key][nb_count[edge_key] - 3] = nb_count[edge2key[faces_edges[(idx + 1) % 4]]] - 1
+            sides[edge_key][nb_count[edge_key] - 2] = nb_count[edge2key[faces_edges[(idx + 2) % 4]]] - 2
+            sides[edge_key][nb_count[edge_key] - 1] = nb_count[edge2key[faces_edges[(idx + 3) % 4]]] - 3
     mesh.edges = np.array(edges, dtype=np.int32)
     mesh.gemm_edges = np.array(edge_nb, dtype=np.int64)
     mesh.sides = np.array(sides, dtype=np.int64)
@@ -286,17 +293,21 @@ def get_edge_faces(faces):
     edge_faces = []
     edge2keys = dict()
     for face_id, face in enumerate(faces):
-        for i in range(3):
-            cur_edge = tuple(sorted((face[i], face[(i + 1) % 3])))
+        for i in range(4):
+            cur_edge = tuple(sorted((face[i], face[(i + 1) % 4])))
             if cur_edge not in edge2keys:
                 edge2keys[cur_edge] = edge_count
                 edge_count += 1
-                edge_faces.append(np.array([cur_edge[0], cur_edge[1], -1, -1]))
+                edge_faces.append(np.array([cur_edge[0], cur_edge[1], -1, -1, -1, -1]))
             edge_key = edge2keys[cur_edge]
             if edge_faces[edge_key][2] == -1:
                 edge_faces[edge_key][2] = face_id
-            else:
+            elif edge_faces[edge_key][3] == -1:
                 edge_faces[edge_key][3] = face_id
+            elif edge_faces[edge_key][4] == -1:
+                edge_faces[edge_key][4] = face_id
+            else:
+                edge_faces[edge_key][5] = face_id
     return edge_count, np.array(edge_faces), edge2keys
 
 
@@ -313,7 +324,7 @@ def extract_features(mesh):
     set_edge_lengths(mesh, edge_points)
     with np.errstate(divide='raise'):
         try:
-            for extractor in [dihedral_angle, symmetric_opposite_angles, symmetric_ratios]:
+            for extractor in [dihedral_angle, symmetric_opposite_angles, diagonal_ratios]:
                 feature = extractor(mesh, edge_points)
                 features.append(feature)
             return np.concatenate(features, axis=0)
@@ -324,7 +335,7 @@ def extract_features(mesh):
 
 def dihedral_angle(mesh, edge_points):
     normals_a = get_normals(mesh, edge_points, 0)
-    normals_b = get_normals(mesh, edge_points, 3)
+    normals_b = get_normals(mesh, edge_points, 5)
     dot = np.sum(normals_a * normals_b, axis=1).clip(-1, 1)
     angles = np.expand_dims(np.pi - np.arccos(dot), axis=0)
     return angles
@@ -335,11 +346,32 @@ def symmetric_opposite_angles(mesh, edge_points):
         the angle is in each face opposite the edge
         sort handles order ambiguity
     """
-    angles_a = get_opposite_angles(mesh, edge_points, 0)
-    angles_b = get_opposite_angles(mesh, edge_points, 3)
-    angles = np.concatenate((np.expand_dims(angles_a, 0), np.expand_dims(angles_b, 0)), axis=0)
+    angles_a, angles_b = get_opposite_angles(mesh, edge_points, 0)
+    angles_c, angles_d = get_opposite_angles(mesh, edge_points, 5)
+    angles = np.concatenate((np.expand_dims(angles_a, 0), np.expand_dims(angles_b, 0),
+                            np.expand_dims(angles_c, 0), np.expand_dims(angles_d, 0)), axis=0)
     angles = np.sort(angles, axis=0)
     return angles
+
+
+def get_diag_ratios(mesh, edge_points, side):
+
+    a_end = edge_points[:, side // 3]
+    a_start = edge_points[:, side // 2 + 3]
+    b_end = edge_points[:, 1 - side // 3]
+    b_start = edge_points[:, side // 2 + 2]
+
+    length_a = np.linalg.norm(mesh.vs[a_end] - mesh.vs[a_start], ord=2, axis=1)
+    length_b = np.linalg.norm(mesh.vs[b_end] - mesh.vs[b_start], ord=2, axis=1)
+    ratios = length_a / length_b
+    return ratios
+
+
+def diagonal_ratios(mesh, edge_points):
+    ratios_a = get_diag_ratios(mesh, edge_points, 0)
+    ratios_b = get_diag_ratios(mesh, edge_points, 5)
+    ratios = np.concatenate((np.expand_dims(ratios_a, 0), np.expand_dims(ratios_b, 0)), axis=0)
+    return np.sort(ratios, axis=0)
 
 
 def symmetric_ratios(mesh, edge_points):
@@ -355,10 +387,10 @@ def symmetric_ratios(mesh, edge_points):
 
 def get_edge_points(mesh):
     """ returns: edge_points (#E x 4) tensor, with four vertex ids per edge
-        for example: edge_points[edge_id, 0] and edge_points[edge_id, 1] are the two vertices which define edge_id 
+        for example: edge_points[edge_id, 0] and edge_points[edge_id, 1] are the two vertices which define edge_id
         each adjacent face to edge_id has another vertex, which is edge_points[edge_id, 2] or edge_points[edge_id, 3]
     """
-    edge_points = np.zeros([mesh.edges_count, 4], dtype=np.int32)
+    edge_points = np.zeros([mesh.edges_count, 6], dtype=np.int32)
     for edge_id, edge in enumerate(mesh.edges):
         edge_points[edge_id] = get_side_points(mesh, edge_id)
         # edge_points[edge_id, 3:] = mesh.get_side_points(edge_id, 2)
@@ -371,46 +403,80 @@ def get_side_points(mesh, edge_id):
     # else:
     edge_a = mesh.edges[edge_id]
 
-    if mesh.gemm_edges[edge_id, 0] == -1:
-        edge_b = mesh.edges[mesh.gemm_edges[edge_id, 2]]
-        edge_c = mesh.edges[mesh.gemm_edges[edge_id, 3]]
+    if mesh.gemm_edges[edge_id, 0] == -1:  # TODO check
+        edge_b = mesh.edges[mesh.gemm_edges[edge_id, 3]]
+        edge_c = mesh.edges[mesh.gemm_edges[edge_id, 4]]
+        edge_d = mesh.edges[mesh.gemm_edges[edge_id, 5]]
     else:
         edge_b = mesh.edges[mesh.gemm_edges[edge_id, 0]]
         edge_c = mesh.edges[mesh.gemm_edges[edge_id, 1]]
-    if mesh.gemm_edges[edge_id, 2] == -1:
-        edge_d = mesh.edges[mesh.gemm_edges[edge_id, 0]]
-        edge_e = mesh.edges[mesh.gemm_edges[edge_id, 1]]
-    else:
         edge_d = mesh.edges[mesh.gemm_edges[edge_id, 2]]
+    if mesh.gemm_edges[edge_id, 3] == -1:  # TODO check
+        edge_e = mesh.edges[mesh.gemm_edges[edge_id, 0]]
+        edge_f = mesh.edges[mesh.gemm_edges[edge_id, 1]]
+        edge_g = mesh.edges[mesh.gemm_edges[edge_id, 2]]
+    else:
         edge_e = mesh.edges[mesh.gemm_edges[edge_id, 3]]
+        edge_f = mesh.edges[mesh.gemm_edges[edge_id, 4]]
+        edge_g = mesh.edges[mesh.gemm_edges[edge_id, 5]]
     first_vertex = 0
     second_vertex = 0
     third_vertex = 0
+    forth_vertex = 0
+    fifth_vertex = 0
     if edge_a[1] in edge_b:
         first_vertex = 1
     if edge_b[1] in edge_c:
         second_vertex = 1
-    if edge_d[1] in edge_e:
+    if edge_d[1] in edge_c:
         third_vertex = 1
-    return [edge_a[first_vertex], edge_a[1 - first_vertex], edge_b[second_vertex], edge_d[third_vertex]]
+    if edge_e[1] in edge_f:
+        forth_vertex = 1
+    if edge_g[1] in edge_f:
+        fifth_vertex = 1
+
+    return [edge_a[first_vertex], edge_a[1 - first_vertex], edge_b[second_vertex],
+            edge_d[third_vertex], edge_e[forth_vertex], edge_g[fifth_vertex]]
 
 
 def get_normals(mesh, edge_points, side):
-    edge_a = mesh.vs[edge_points[:, side // 2 + 2]] - mesh.vs[edge_points[:, side // 2]]
-    edge_b = mesh.vs[edge_points[:, 1 - side // 2]] - mesh.vs[edge_points[:, side // 2]]
+
+    a_end = edge_points[:, side // 2 + 2]
+    a_start = edge_points[:, side // 3]
+    b_end = edge_points[:, 1 - side // 3]
+    b_start = edge_points[:, side // 3]
+
+    edge_a = mesh.vs[a_end] - mesh.vs[a_start]
+    edge_b = mesh.vs[b_end] - mesh.vs[b_start]
     normals = np.cross(edge_a, edge_b)
     div = fixed_division(np.linalg.norm(normals, ord=2, axis=1), epsilon=0.1)
     normals /= div[:, np.newaxis]
     return normals
 
 def get_opposite_angles(mesh, edge_points, side):
-    edges_a = mesh.vs[edge_points[:, side // 2]] - mesh.vs[edge_points[:, side // 2 + 2]]
-    edges_b = mesh.vs[edge_points[:, 1 - side // 2]] - mesh.vs[edge_points[:, side // 2 + 2]]
+
+    a_end = edge_points[:, side // 3]
+    a_start = edge_points[:, side // 2 + 2]
+    b_end = edge_points[:, side // 2 + 3]
+    b_start = edge_points[:, side // 2 + 2]
+    c_end = edge_points[:, side // 2 + 2]
+    c_start = edge_points[:, side // 2 + 3]
+    d_end = edge_points[:, 1 - side // 5]
+    d_start = edge_points[:, side // 2 + 3]
+
+    edges_a = mesh.vs[a_end] - mesh.vs[a_start]
+    edges_b = mesh.vs[b_end] - mesh.vs[b_start]
+    edges_c = mesh.vs[c_end] - mesh.vs[c_start]
+    edges_d = mesh.vs[d_end] - mesh.vs[d_start]
 
     edges_a /= fixed_division(np.linalg.norm(edges_a, ord=2, axis=1), epsilon=0.1)[:, np.newaxis]
     edges_b /= fixed_division(np.linalg.norm(edges_b, ord=2, axis=1), epsilon=0.1)[:, np.newaxis]
+    edges_c /= fixed_division(np.linalg.norm(edges_c, ord=2, axis=1), epsilon=0.1)[:, np.newaxis]
+    edges_d /= fixed_division(np.linalg.norm(edges_d, ord=2, axis=1), epsilon=0.1)[:, np.newaxis]
     dot = np.sum(edges_a * edges_b, axis=1).clip(-1, 1)
-    return np.arccos(dot)
+    dot2 = np.sum(edges_c * edges_d, axis=1).clip(-1, 1)
+    return np.arccos(dot), np.arccos(dot2)
+    # return np.arccos(dot)
 
 
 def get_ratios(mesh, edge_points, side):
