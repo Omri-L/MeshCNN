@@ -468,7 +468,7 @@ class MeshPool(nn.Module):
     def clear_doublets(self, mesh, mask, edge_groups):
         doublet_vertices, doublet_pairs_edges = self.find_doublets(mesh)
         if len(doublet_vertices) == 0:
-            return [], []
+            return [], [], []
 
         pairs_edges_vertices = np.array([mesh.edges[e].copy() for e in doublet_pairs_edges])
 
@@ -497,7 +497,8 @@ class MeshPool(nn.Module):
         if len(out) > 0:
             doublet_vertices = list(doublet_vertices) + list(out[0])
             pairs_edges_vertices = list(pairs_edges_vertices) + list(out[1])
-        return doublet_vertices, pairs_edges_vertices
+            doublet_pairs_edges = list(doublet_pairs_edges) + list(out[2])
+        return doublet_vertices, pairs_edges_vertices, doublet_pairs_edges
 
     def find_diag_vertices(self, mesh, u, e_u, v_e_u):
 
@@ -555,6 +556,13 @@ class MeshPool(nn.Module):
         v_e_v, e_v = self.get_all_vertices_of_edges_connected_to_vertex(mesh,
                                                                         v)
 
+        # get outer edges
+        faces_u, _ = self.get_all_faces_connected_to_vertex(mesh, u)
+        faces_v, _ = self.get_all_faces_connected_to_vertex(mesh, v)
+        all_faces = faces_u + faces_v
+        all_edges = set().union(*all_faces)
+        outer_edges = list(all_edges - set(e_u) - set(e_v))
+
         # 2. Edges rotation
         # a. find diagonal vertices
         diag_vertices, diag_vertex_to_edges_dict = \
@@ -578,7 +586,8 @@ class MeshPool(nn.Module):
                                          edge_groups, mask)
 
         # 3. Clear all doublets in the mesh
-        doublet_vertices, pairs_edges_vertices = self.clear_doublets(mesh, mask, edge_groups)
+        doublet_vertices, pairs_edges_vertices, doublet_pairs_edges = \
+            self.clear_doublets(mesh, mask, edge_groups)
 
         # find the new connections instead of the old doublets
         replaced_doublets_edges = []
@@ -631,17 +640,23 @@ class MeshPool(nn.Module):
             self.get_all_faces_connected_to_vertex(mesh, u)
 
         # b. find outer vertices
-        outer_edges = list(set().union(*faces) - set(e_u))
+        # outer_edges = list(set().union(*faces) - set(e_u))
         v_e_u2, e_u2 = self.get_all_vertices_of_edges_connected_to_vertex(mesh, u)
         outer_vertices = set(v_e_u2 + v_e_u + v_e_v + \
                              diag_vertices_v + replaced_doublets_vertices) - \
                          set(doublet_vertices) - set([u, v])
 
+        # new - update outer_edges
+        outer_edges = set(outer_edges).union(set(set().union(*replaced_doublets_edges))) -\
+                      set(set().union(*doublet_pairs_edges))
+
+
         # c. keep only faces with outer edges:
         keep = []
         for f_id, face in enumerate(faces):
-            if np.any([len(set(mesh.edges[e]).intersection(outer_vertices))
-                       == 2 for e in face]):
+            # if np.any([len(set(mesh.edges[e]).intersection(outer_vertices))
+            #            == 2 for e in face]):
+            if np.any([e in outer_edges for e in face]):
                 keep.append(f_id)
         faces = (np.array(faces)[keep]).tolist()
         faces_vertices = (np.array(faces_vertices)[keep]).tolist()
@@ -668,9 +683,10 @@ class MeshPool(nn.Module):
                 #     if is_new and np.any([len(set(mesh.edges[efi]).intersection(outer_vertices)) == 2 for efi in f[i]]):
                 #         faces_vertices.append(fv_i)
                 #         faces.append(f[i])
-                if is_new and np.any([len(
-                        set(mesh.edges[efi]).intersection(outer_vertices)) == 2
-                                      for efi in f[i]]):
+                # if is_new and np.any([len(
+                #         set(mesh.edges[efi]).intersection(outer_vertices)) == 2
+                #                       for efi in f[i]]):
+                if is_new and np.any([efi in outer_vertices for efi in f[i]]):
                     faces_vertices.append(fv_i)
                     faces.append(f[i])
 
