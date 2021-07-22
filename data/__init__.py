@@ -10,6 +10,9 @@ def CreateDataset(opt):
     elif opt.dataset_mode == 'classification':
         from data.classification_data import ClassificationData
         dataset = ClassificationData(opt)
+    elif opt.dataset_mode == 'cifar10_classification':
+        from data.img_classification_data import MeshCifar10
+        dataset = MeshCifar10(opt)
     return dataset
 
 

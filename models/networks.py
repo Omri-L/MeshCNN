@@ -111,7 +111,7 @@ def define_classifier(input_nc, ncf, ninput_edges, nclasses, opt, gpu_ids, arch,
     return init_net(net, init_type, init_gain, gpu_ids)
 
 def define_loss(opt):
-    if opt.dataset_mode == 'classification':
+    if opt.dataset_mode in ['classification', 'cifar10_classification']:
         loss = torch.nn.CrossEntropyLoss()
     elif opt.dataset_mode == 'segmentation':
         loss = torch.nn.CrossEntropyLoss(ignore_index=-1)
