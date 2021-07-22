@@ -4,15 +4,20 @@ import torch
 import numpy as np
 import os
 from models.layers.mesh_union import MeshUnion
-from models.layers.mesh_prepare import fill_mesh
 
 
 class Mesh:
 
-    def __init__(self, file=None, opt=None, hold_history=False, export_folder=''):
+    def __init__(self, file=None, opt=None, hold_history=False, export_folder='', img_data=None):
         self.vs = self.v_mask = self.filename = self.features = self.edge_areas = None
         self.edges = self.gemm_edges = self.sides = None
         self.pool_count = 0
+        self.img_data = img_data
+        if img_data is not None:
+            from models.layers.img2mesh_prepare import fill_mesh
+        else:
+            from models.layers.mesh_prepare import fill_mesh
+
         fill_mesh(self, file, opt)
         self.export_folder = export_folder
         self.history_data = None
@@ -122,7 +127,7 @@ class Mesh:
                 cur_segments = segments[:len(self.history_data['edges_mask'][i])]
                 cur_segments = cur_segments[self.history_data['edges_mask'][i]]
 
-    def __get_cycle(self, gemm, edge_id):
+    def __get_cycle(self, gemm, edge_id): # TODO
         cycles = []
         for j in range(2):
             next_side = start_point = j * 2
@@ -141,7 +146,7 @@ class Mesh:
                 cycles[-1].append(next_key)
         return cycles
 
-    def __cycle_to_face(self, cycle, v_indices):
+    def __cycle_to_face(self, cycle, v_indices): # TODO
         face = []
         for i in range(3):
             v = list(set(self.edges[cycle[i]]) & set(self.edges[cycle[(i + 1) % 3]]))[0]
