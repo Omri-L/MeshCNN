@@ -104,7 +104,7 @@ def remove_non_manifolds(mesh, faces):
         faces_edges = []
         is_manifold = False
         for i in range(4):
-            cur_edge = (face[i], face[(i + 1) % 3])
+            cur_edge = (face[i], face[(i + 1) % 4])
             if cur_edge in edges_set:
                 is_manifold = True
                 break
