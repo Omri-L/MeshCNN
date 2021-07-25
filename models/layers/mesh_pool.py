@@ -5,6 +5,7 @@ from models.layers.mesh_union import MeshUnion
 import numpy as np
 from heapq import heappop, heapify
 import random
+from copy import deepcopy
 
 
 class MeshPool(nn.Module):
@@ -14,7 +15,7 @@ class MeshPool(nn.Module):
         self.__out_target = target
         self.__multi_thread = multi_thread
         self.__fe = None
-        self.__updated_fe = None
+        self.__updated_fe = []
         self.__meshes = None
         self.__merge_edges = [-1, -1]
 
@@ -37,6 +38,7 @@ class MeshPool(nn.Module):
         if self.__multi_thread:
             for mesh_index in range(len(meshes)):
                 pool_threads[mesh_index].join()
+        a = self.__updated_fe
         out_features = torch.cat(self.__updated_fe).view(len(meshes), -1,
                                                          self.__out_target)
         return out_features
@@ -52,33 +54,52 @@ class MeshPool(nn.Module):
         edge_groups = MeshUnion(mesh.edges_count, self.__fe.device)
         fe = self.__fe[mesh_index, :, :mesh.edges_count].clone()
 
-        # ids = [1723, 13144, 9950, 3641, 5597, 13378, 13414, 3230, 10691, 9948, 9954, 4502, 1217, 3631, 1223, 3633, 6139, 13541, 14280, 6135, 14006, 1725, 6015, 1719, 3135, 11004, 13380, 10966, 1211, 13383, 9947, 5658, 10792, 5660, 13581, 5488, 3139, 5678, 6137, 8527, 13583, 9997, 13224, 15543, 13115, 1465, 14751, 7973, 15786, 14458, 15537, 14278, 12477, 13148, 7340, 8523, 14931, 3143, 1717, 10738, 7334, 3137, 10746, 6337, 10796, 3283, 7399, 5684, 3285, 10748, 1467, 5595, 4500, 491, 5932, 12435, 14753, 8125, 8557, 5510, 13577, 6956, 10962, 13557, 15535, 15683, 5601, 15531, 6560, 5929, 13146, 3227, 6960, 10968, 7338, 10125, 10293, 5504, 1566, 4933, 10964, 9260, 6949, 6947, 6568, 4775, 3279, 8519, 14460, 3406, 7969, 1494, 5106, 9941, 6570, 7977, 10970, 11598, 10043, 13579, 6958, 14315, 4771, 14329, 7086, 13422, 3410, 6962, 1490, 10285, 8286, 9945, 7084, 14286, 6540, 9946, 13048, 10034, 4195, 5508, 11006, 10297, 3414, 14282, 6131, 14283, 5286, 6946, 7062, 6964, 6007, 6944, 13573, 4773, 9093, 7025, 11252, 6572, 4767, 5930, 10289, 10972, 3133, 8332, 10036, 15233, 13390, 3721, 9082, 5656, 6562, 4769, 11258, 5592, 14323, 3281, 13113, 7092, 11592, 4510, 1359, 9417, 14906, 9892, 10742, 6019, 3248, 11022, 8336, 4562, 10734, 9999, 13046, 13140, 7078, 6566, 14464, 13138, 9089, 10040, 3635, 1486, 5484, 6496, 6943, 6013, 7032, 9076, 5514, 7848, 14895, 13418, 6533, 13386, 6141, 7979, 14929, 14281, 10032, 7964, 11264, 6335, 8340, 11000, 7784, 6558, 10800, 10038, 7023, 7975, 13300, 5516, 10047, 7080, 11260, 5283, 5619, 4777, 10318, 2576, 5102, 4506, 3149, 5927, 4560, 9144, 6133, 11002, 7076, 7082, 5512, 6564, 10039, 4893, 14652, 6538, 5689, 15541, 3145, 9942, 3249, 9148, 7972, 3229, 13303, 13589, 8511, 1479, 9473, 7214, 10301, 11270, 5937, 7060, 3244, 6334, 10627, 3141, 10625, 10798, 6531, 6490, 6132, 7208, 11272, 11256, 7090, 14758, 10629, 13548, 1231, 13389, 10049, 7852, 4687, 13998, 12192, 6134, 12479, 9087, 14911, 9254, 2119, 1562, 2125, 9152, 5520, 9880, 14285, 5280, 13010, 9952, 3371, 4689, 4781, 6542, 15219, 14745, 1309, 14908, 9878, 14466, 2113, 14781, 3128, 6522, 9256, 4779, 2893, 9091, 4313, 2079, 9086, 9467, 9141, 1483, 11255, 6514, 10044, 3225, 5664, 10750, 1558, 2087, 6488, 11564, 6581, 2081, 4309, 9330, 9138, 3132, 10695, 4763, 13947, 11257, 14744, 6392, 5285, 5281, 9140, 11024, 6073, 7776, 13571, 3375, 4929, 13142, 5483, 14750, 6571, 9323, 13236, 5599, 8329, 14012, 11251, 6569, 4305, 14274, 2889, 9413, 12188, 6336, 11003, 9940, 12242, 7786, 11250, 6130, 2127, 6965, 2121, 4056, 8325, 11254, 6516, 9262, 14275, 6536, 5923, 2115, 7336, 3401, 10999, 8320, 8324, 3400, 3402, 4785, 9102, 3404, 8327, 9406, 9097, 9136, 15646, 8328, 9106, 9340, 13953, 9098, 4789, 3408, 10035, 3399, 14776, 3398, 7066, 3403, 13554, 1225, 10794, 2133, 6520, 6957, 3213, 8507, 13408, 4793, 13385, 9930, 9094, 8326, 11001, 14321, 6189, 12437, 6518, 14293, 11247, 11026, 4566, 9334, 3724, 7439, 7024, 7247, 3394, 3106, 9085, 13429, 11566, 2085, 3247, 5921, 9121, 10119, 9117, 13111, 8330, 10974, 6567, 1488, 7029, 6548, 6043, 5480, 5662, 13394, 1219, 10042, 6578, 3775, 10319, 2107, 6136, 5108, 9006, 4935, 3785, 6713, 4691, 6484, 8334, 13410, 3222, 6706, 6954, 5925, 6952, 6554, 11248, 4068, 4074, 7054, 9125, 1213, 6384, 4062, 9131, 9882, 2350, 6378, 11616, 5414, 9090, 5418, 6017, 7344, 5021, 6508, 9139, 7206, 5110, 10804, 6387, 11052, 9956, 4770, 9130, 5518, 7433, 11383, 10744, 6544, 15529, 6550, 5524, 6708, 6390, 5922, 3130, 9126, 6063, 4783, 7342, 6556, 14288, 12439, 6704, 14313, 5023, 6504, 7022, 6574, 13044, 13387, 10562, 10299, 2364, 6386, 14796, 11636, 7844, 2252, 6380, 4895, 2254, 10802, 7088, 9061, 9781, 14928, 11016, 4693, 9142, 2250, 3108, 6009, 7840, 8666, 14325, 6062, 14787, 9331, 5926, 8305, 14002, 9775, 9123, 4563, 11640, 5928, 5294, 11012, 11253, 2899, 10732, 7072, 2071, 6700, 4768, 4799, 5430, 6039, 11054, 14276, 7251, 1878, 13967, 6023, 6576, 14930, 1216, 4795, 9122, 9336, 2895, 2073, 6498, 11398, 1487, 4798, 9127, 4787, 9146, 9763, 6546, 7332, 15714, 10566, 7398, 2258, 9769, 9101, 6834, 5027, 4791, 13513, 4307, 11638, 7068, 13971, 1866, 8123, 11262, 3232, 5112, 8503, 6907, 3766, 2755, 7027, 3771, 8899, 5020, 6388, 13538, 11828, 6955, 4337, 11005, 7074, 4897, 4667, 13587, 6059, 6492, 13412, 4794, 8302, 6199, 2093, 8879, 6385, 8875, 11844, 13957, 13570, 6510, 5825, 7063, 5282, 8664, 9111, 7034, 13558, 14284, 6909, 3773, 8980, 10998, 2354, 6966, 13012, 6698, 2257, 5104, 13607, 6067, 5022, 9074, 13549, 9410, 8668, 7133, 4673, 15249, 13578, 12191, 10046, 6911, 9418, 6971, 4303, 10048, 6712, 9115, 6389, 1482, 13388, 8903, 6552, 7765, 13289, 6065, 7437, 6391, 13576, 7394, 11596, 15648, 9084, 4790, 4671, 2356, 4333, 7856, 3317, 4564, 14790, 4329, 6711, 9105, 6710, 1484, 10379, 14756, 8020, 7335, 9095, 1868, 4024, 1729, 9321, 4042, 6968, 4299, 11056, 3129, 6512, 13955, 9119, 3726, 9133, 11217, 8883, 5623, 2392, 6836, 6559, 1727, 3319, 4931, 11223, 8907, 2065, 5024, 6383, 3655, 4030, 14910, 1732, 2251, 3252, 6066, 14778, 5617, 8541, 8311, 3124, 12190, 11008, 5824, 4036, 6494, 10303, 14752, 12434, 13384, 1885, 4504, 2253, 6838, 3246, 8499, 7830, 3250, 8307, 6161, 9109, 11028, 9258, 11010, 3058, 8309, 11590, 8014, 4568, 10411, 2067, 8173, 5028, 13951, 13054, 6580, 2582, 3793, 13231, 5627, 4762, 9066, 15706, 7038, 14004, 10409, 14789, 2360, 3646, 6840, 13411, 4669, 961, 3134, 2757, 1205, 9129, 9113, 4766, 5935, 5934, 10413, 12890, 8304, 6709, 4891, 14748, 7200, 6970, 9590, 6047, 10121, 1327, 14913, 13040, 11570, 2897, 9471, 10806, 10808, 10601, 13634, 5605, 9422, 2888, 10570, 1326, 9973, 3220, 9120, 14912, 10564, 10281, 9116, 10560, 1485, 9124, 5666, 4343, 13591, 13393]
-        ids = [16953, 13019, 18222, 9867, 541, 17293, 12942, 13217, 14538, 12323, 15846, 11915, 4741, 13079, 15130, 17372, 4831, 14193, 13802, 16145, 10696, 3023, 5939, 2307, 17054, 17451, 7235, 12619, 16337, 16474, 7199, 4663, 7445, 12322, 9974, 8431, 4618, 8933, 12393, 17693, 3509, 6739, 2101, 4681, 7233, 7810, 15245, 5018, 14288, 9117, 7214, 16966, 17040, 16473, 13445, 5602, 4591, 8430, 15431, 16172, 15433, 13779, 10531, 1924, 14903, 5774, 5234, 6835, 15534, 3035, 16198, 13388, 6803, 8426, 12877, 6667, 8844, 10161, 16653, 16482, 6688, 16790, 9463, 4240, 11770, 16120, 18494, 2149, 16463, 2440, 3377, 7793, 13382, 10518, 13086, 4680, 10708, 1798, 5012, 7469, 10692, 17921, 4880, 4586, 13096, 4817, 8932, 7685, 10919, 4938, 13862, 18008, 17144, 7367, 15278, 16343, 6884, 3244, 4628, 14843, 7225, 17412, 16585, 7092, 16485, 9421, 2814, 10212, 5414, 12615, 13193, 10203, 2343, 13848, 17411, 9977, 3515, 16436, 1926, 12805, 7537, 10807, 14197, 14177, 6877, 10208, 6108, 9000, 13268, 14191, 13413, 8544, 7473, 10688, 12776, 6805, 14625, 5768, 9601, 11856, 6573, 8423, 15314, 15112, 13093, 5235, 2811, 14285, 15689, 16429, 12657, 7458, 6245, 13381, 9446, 2145, 2899, 2072, 9408, 17418, 4923, 2635, 13417, 3929, 9724, 2869, 7765, 16580, 13800, 11005, 3736, 15989, 12713, 13294, 18228, 4620, 6570, 2148, 18277, 14365, 14301, 15640, 2466, 12822, 15003, 4823, 17687, 11859, 13472, 5169, 8843, 14534, 14214, 5118, 16168, 4405, 14588, 6284, 13372, 14147, 17253, 2868, 16331, 7800, 15998, 16466, 8928, 6888, 6348, 9407, 3413, 5763, 2637, 14262, 10174, 15357, 12621, 8422, 13325, 18258, 16399, 6238, 7252, 15971, 12188, 5804, 16113, 17297, 16166, 3931, 9050, 4756, 17408, 8414, 14537, 11911, 2470, 4643, 15509, 12816, 11228, 6742, 17784, 12618, 7744, 2463, 16199, 2450, 9602, 10699]
+        ids = None
+        # if self.__out_target == 430:
+        #     ids = [354, 283, 318, 316, 320, 314, 374, 292, 317, 322, 348, 315, 319, 252, 323, 219, 350, 281, 249, 312, 191, 287, 469, 247, 346, 438, 282, 221, 285, 343, 467, 220, 313, 291, 217]
+        # elif self.__out_target == 380:
+        #     ids = [264, 429, 309, 208, 260, 285, 265, 86, 183, 88, 181, 210, 90, 84, 157, 92, 185, 155, 150, 153, 304, 145, 148, 152, 94, 118, 233, 203, 147, 175, 122, 159, 201]
+        # elif self.__out_target == 300:
+        #     ids = [379, 215, 148, 124, 104, 235, 3, 105, 100, 102, 163, 43, 125, 166, 22, 81, 259, 19, 139, 147, 57, 130, 109]
+        # elif self.__out_target == 250:
+        #     ids = [299, 159, 193, 65, 146, 173, 160, 86, 138, 176, 148, 0, 130, 214, 36, 118, 3, 134, 69, 106, 122, 22, 47, 4, 7, 110, 34, 191, 240, 141, 39, 158, 161, 41, 19, 129, 25, 90, 43, 117, 42, 211, 35, 116, 271, 31, 137, 2, 144, 16, 142, 109, 125, 270, 147, 143]
+
+        # ids = [234, 203, 44, 168, 43, 137, 69, 75, 160]
+        # ids = [16953, 13019, 18222, 9867, 541, 17293, 12942, 13217, 14538, 12323, 15846, 11915, 4741, 13079, 15130, 17372, 4831, 14193, 13802, 16145, 10696, 3023, 5939, 2307, 17054, 17451, 7235, 12619, 16337, 16474, 7199, 4663, 7445, 12322, 9974, 8431, 4618, 8933, 12393, 17693, 3509, 6739, 2101, 4681, 7233, 7810, 15245, 5018, 14288, 9117, 7214, 16966, 17040, 16473, 13445, 5602, 4591, 8430, 15431, 16172, 15433, 13779, 10531, 1924, 14903, 5774, 5234, 6835, 15534, 3035, 16198, 13388, 6803, 8426, 12877, 6667, 8844, 10161, 16653, 16482, 6688, 16790, 9463, 4240, 11770, 16120, 18494, 2149, 16463, 2440, 3377, 7793, 13382, 10518, 13086, 4680, 10708, 1798, 5012, 7469, 10692, 17921, 4880, 4586, 13096, 4817, 8932, 7685, 10919, 4938, 13862, 18008, 17144, 7367, 15278, 16343, 6884, 3244, 4628, 14843, 7225, 17412, 16585, 7092, 16485, 9421, 2814, 10212, 5414, 12615, 13193, 10203, 2343, 13848, 17411, 9977, 3515, 16436, 1926, 12805, 7537, 10807, 14197, 14177, 6877, 10208, 6108, 9000, 13268, 14191, 13413, 8544, 7473, 10688, 12776, 6805, 14625, 5768, 9601, 11856, 6573, 8423, 15314, 15112, 13093, 5235, 2811, 14285, 15689, 16429, 12657, 7458, 6245, 13381, 9446, 2145, 2899, 2072, 9408, 17418, 4923, 2635, 13417, 3929, 9724, 2869, 7765, 16580, 13800, 11005, 3736, 15989, 12713, 13294, 18228, 4620, 6570, 2148, 18277, 14365, 14301, 15640, 2466, 12822, 15003, 4823, 17687, 11859, 13472, 5169, 8843, 14534, 14214, 5118, 16168, 4405, 14588, 6284, 13372, 14147, 17253, 2868, 16331, 7800, 15998, 16466, 8928, 6888, 6348, 9407, 3413, 5763, 2637, 14262, 10174, 15357, 12621, 8422, 13325, 18258, 16399, 6238, 7252, 15971, 12188, 5804, 16113, 17297, 16166, 3931, 9050, 4756, 17408, 8414, 14537, 11911, 2470, 4643, 15509, 12816, 11228, 6742, 17784, 12618, 7744, 2463, 16199, 2450, 9602, 10699]
         count = -1
         while mesh.edges_count > self.__out_target:
             value, edge_id = heappop(queue)
             count += 1
-            edge_id = ids[count]
+            if ids is not None:
+                edge_id = ids[count]
             edge_id = int(edge_id)
             print('pool edge_id %d' % edge_id)
             if mask[edge_id]:
                 _, fe = self.__pool_edge(mesh, edge_id, fe, mask, edge_groups)
         mesh.clean(mask, edge_groups)
-        # fe = edge_groups.rebuild_features(self.__fe[mesh_index], mask,
-        #                                   self.__out_target)  # TODO use features build here?
+        fe = edge_groups.rebuild_features(self.__fe[mesh_index], fe, mask,
+                                          self.__out_target)  # TODO use features build here?
         self.__updated_fe[mesh_index] = fe
+        print('finish pooling')
 
     def __pool_edge(self, mesh, edge_id, fe, mask, edge_groups):
 
-        if not np.all(mesh.gemm_edges[mesh.gemm_edges[edge_id],
-                                      mesh.sides[edge_id]] == edge_id):
-            new_sides = np.where(mesh.gemm_edges[mesh.gemm_edges[edge_id]]
-                                 == edge_id)[1]
-            mesh.sides[edge_id] = new_sides
-
         if self.has_boundaries(mesh, edge_id):
             return False, fe
-        elif self.__clean_side(mesh, edge_id, mask, edge_groups, 0) \
+
+        if not np.all(mesh.gemm_edges[mesh.gemm_edges[edge_id],
+                                      mesh.sides[edge_id]] == edge_id):
+            new_sides = [-1, -1, -1, -1, -1, -1]
+            for i_en, en in enumerate(mesh.gemm_edges[edge_id]):
+                if en == -1:
+                    continue
+                side = np.where(mesh.gemm_edges[en] == edge_id)[0]
+                if len(side) > 0:
+                    new_sides[i_en] = side[0]
+
+            mesh.sides[edge_id] = new_sides
+
+        if self.__clean_side(mesh, edge_id, mask, edge_groups, 0) \
                 and self.__clean_side(mesh, edge_id, mask, edge_groups, 3) \
                 and self.__is_one_ring_valid(mesh, edge_id):
 
@@ -362,19 +383,10 @@ class MeshPool(nn.Module):
         # Put new data in mesh data structure
         for i in range(len(abs_edges)):
             abs_edge = abs_edges[i]
-            if -1 in edge_nb[i]:
-                old_gemm = mesh.gemm_edges[abs_edge]
+            old_gemm = mesh.gemm_edges[abs_edge]
+            if -1 in edge_nb[i] and -1 not in old_gemm:
                 new_gemm = edge_nb[i]
                 old_pos = np.where(old_gemm == new_gemm[0])[0].flatten()
-
-                # new_gemm = old_gemm.tolist()
-                # if old_pos >= 0:
-                #     while old_pos > 0:
-                #         new_gemm = new_gemm[-1:] + new_gemm[:-1]
-                #         old_pos -= 1
-                # else:
-                #     assert (0)
-                # new_gemm = np.array(new_gemm)
 
                 if old_pos == 0:
                     new_gemm = old_gemm
@@ -390,6 +402,14 @@ class MeshPool(nn.Module):
                     assert(False)
 
                 mesh.gemm_edges[abs_edge] = new_gemm
+                if mesh.edges[new_gemm[2], 0] in mesh.edges[new_gemm[3]]:
+                    continue
+                elif mesh.edges[new_gemm[2], 1] in mesh.edges[new_gemm[3]]:
+                    continue
+                else:
+                    new_gemm[5], new_gemm[3] = new_gemm[3], new_gemm[5]
+                    mesh.gemm_edges[abs_edge] = new_gemm
+
             else:
                 mesh.gemm_edges[abs_edge] = edge_nb[i]
                 mesh.sides[abs_edge] = sides[i]
@@ -397,12 +417,15 @@ class MeshPool(nn.Module):
         # I. fix sides
         for i in range(len(abs_edges)):
             abs_edge = abs_edges[i]
-            if not np.all(mesh.gemm_edges[
-                              mesh.gemm_edges[abs_edge], mesh.sides[
-                                  abs_edge]] == abs_edge):
-                new_sides = np.where(
-                    mesh.gemm_edges[mesh.gemm_edges[abs_edge]] == abs_edge)[1]
-                mesh.sides[abs_edge] = new_sides
+            new_sides = [-1, -1, -1, -1, -1, -1]
+            for i_en, en in enumerate(mesh.gemm_edges[abs_edge]):
+                if en == -1:
+                    continue
+                side = np.where(mesh.gemm_edges[en] == abs_edge)[0]
+                if len(side) > 0:
+                    new_sides[i_en] = side[0]
+
+            mesh.sides[abs_edge] = new_sides
 
         return
 
@@ -448,16 +471,18 @@ class MeshPool(nn.Module):
 
         outer_vertices = set(all_vn) - set(face_vertices)
         if len(outer_vertices) == 4:
-            for fi, f in enumerate(faces):
+            faces_copy = faces.copy()
+            faces_vertices_copy = faces_vertices.copy()
+            for fi, f in enumerate(faces_copy):
                 if f == face:
                     continue
                 else:
-                    is_outer_face = len(outer_vertices.difference(set(faces_vertices[fi]))) == 0
+                    is_outer_face = len(outer_vertices.difference(set(faces_vertices_copy[fi]))) == 0
                     if is_outer_face:
                         removed_faces.append(f)
-                        removed_faces_vertices.append(faces_vertices[fi])
+                        removed_faces_vertices.append(faces_vertices_copy[fi])
                         faces.remove(f)
-                        faces_vertices.remove(faces_vertices[fi])
+                        faces_vertices.remove(faces_vertices_copy[fi])
                         # print(f)
                         # print('double face was found!')
 
@@ -506,20 +531,28 @@ class MeshPool(nn.Module):
             doublet_pairs_edges = list(doublet_pairs_edges) + list(out[2])
         return doublet_vertices, pairs_edges_vertices, doublet_pairs_edges
 
-    @staticmethod # TODO move from here
-    def find_doublets2(mesh, vertices):
+    def find_doublets2(self, mesh, vertices):
         doublet_pair_edges = []
         # doublet_vertices = np.where(np.array([len(mesh.ve[j]) for j in range(len(mesh.ve))]) == 2)[0]
         doublet_vertices_indices = np.where(np.array([len(mesh.ve[v]) for v in vertices]) == 2)[0]
         doublet_vertices = [vertices[i] for i in doublet_vertices_indices]
         if len(doublet_vertices) > 0:
             doublet_pair_edges = [mesh.ve[v].copy() for v in doublet_vertices]
+
+        # check if doublet has boundaries - if it has do not clear this doublet
+        doublet_pair_edges_copy = doublet_pair_edges.copy()
+        doublet_vertices_copy = doublet_vertices.copy()
+        for i, doublet_pair in enumerate(doublet_pair_edges_copy):
+            if np.any([self.has_boundaries2(mesh, d) for d in doublet_pair]):
+                doublet_pair_edges.remove(doublet_pair)
+                doublet_vertices.remove(doublet_vertices_copy[i])
+
         return doublet_vertices, doublet_pair_edges
 
     def clear_doublets2(self, vertices, mesh, mask, edge_groups):
         doublet_vertices, doublet_pairs_edges = self.find_doublets2(mesh, vertices)
         if len(doublet_vertices) == 0:
-            return [], [], []
+            return [], [], [], []
 
         pairs_edges_vertices = np.array([mesh.edges[e].copy() for e in doublet_pairs_edges])
 
@@ -583,13 +616,24 @@ class MeshPool(nn.Module):
                     replaced_doublets_vertices.append(mesh.edges[replaced_doublet[1]])
 
         replaced_doublets_vertices = list(set(np.array(replaced_doublets_vertices).flatten()))
+        replaced_doublets_edges = list(
+            np.array(replaced_doublets_edges).flatten())
 
         out = self.clear_doublets2(replaced_doublets_vertices, mesh, mask, edge_groups)
         if len(out) > 0:
             doublet_vertices = list(doublet_vertices) + list(out[0])
             pairs_edges_vertices = list(pairs_edges_vertices) + list(out[1])
             doublet_pairs_edges = list(doublet_pairs_edges) + list(out[2])
-        return doublet_vertices, pairs_edges_vertices, doublet_pairs_edges
+            if len(out[2]) > 0:
+                doublet_edges2 = out[2][0]
+
+                replaced_doublets_edges_copy = replaced_doublets_edges.copy()
+                for e in replaced_doublets_edges_copy:
+                # for pair in replaced_doublets_edges:
+                    if e in doublet_edges2:
+                        replaced_doublets_edges.remove(e)
+
+        return doublet_vertices, pairs_edges_vertices, doublet_pairs_edges, replaced_doublets_edges
 
     def find_diag_vertices(self, mesh, u, e_u, v_e_u):
 
@@ -629,14 +673,23 @@ class MeshPool(nn.Module):
         v_ring = v_ring.union(ve_to_reconnect_with_u)
         return v_ring
 
-    def rotate_edges(self, mesh, fe, edge_id, mask, edge_groups):
+    def check_u_v_boundaries(self, mesh, u, v_e_u, e_u, v, v_e_v, e_v):
 
-        # check if already removed this edge
-        if not mask[edge_id]:
-            print('edge_id %d already removed' % edge_id)
-            return fe
+        correct_config = True
+        # check if any edge comes from vertex u has boundary
+        switch_u_v = np.any([self.has_boundaries2(mesh, e) for e in e_u])
 
-        # 1. Get info
+        if switch_u_v:
+            correct_config = not np.any([self.has_boundaries2(mesh, e) for e in e_v])
+            if correct_config:
+                # swap u and v
+                u, v = v, u
+                v_e_u, v_e_v = v_e_v, v_e_u
+                e_u, e_v = e_v, e_u
+
+        return correct_config, u, v_e_u, e_u, v, v_e_v, e_v
+
+    def get_edge_hood_info(self, mesh, edge_id):
         # get vertices of edge with edge_id
         u, v = mesh.edges[edge_id]
 
@@ -646,14 +699,83 @@ class MeshPool(nn.Module):
         # get all edges connected to vertex v and all the vertices of them
         v_e_v, e_v = self.get_all_vertices_of_edges_connected_to_vertex(mesh,
                                                                         v)
+        if len(e_u) > len(e_v):
+            # swap u and v
+            u, v = v, u
+            v_e_u, v_e_v = v_e_v, v_e_u
+            e_u, e_v = e_v, e_u
 
-        # get outer edges
-        faces_u, _ = self.get_all_faces_connected_to_vertex(mesh, u)
-        faces_v, _ = self.get_all_faces_connected_to_vertex(mesh, v)
+        return u, v_e_u, e_u, v, v_e_v, e_v
+
+    @staticmethod
+    def build_faces_from_edges_hood(mesh, edges):
+        faces = []
+        for edge in edges:
+            face = [edge] + list(mesh.gemm_edges[edge, 0:3])
+            faces.append(face)
+            face = [edge] + list(mesh.gemm_edges[edge, 3:6])
+            faces.append(face)
+        return faces
+
+    @staticmethod
+    def restore_data(mesh, restored_mesh, features, restored_features,
+                     mask, restored_mask, edge_groups, restored_groups):
+        # restore mesh
+        mesh.edge_areas = restored_mesh.edge_areas
+        mesh.edge_lengths = restored_mesh.edge_lengths
+        mesh.edges = restored_mesh.edges
+        mesh.edges_count = restored_mesh.edges_count
+        mesh.features = restored_mesh.features
+        mesh.sides = restored_mesh.sides
+        mesh.gemm_edges = restored_mesh.gemm_edges
+        mesh.ve = restored_mesh.ve
+        mesh.vs = restored_mesh.vs
+
+        # restore features
+        features.data = restored_features.data
+
+        # restore mask
+        mask[:] = restored_mask[:]
+
+        # restore edge_groups
+        edge_groups.groups = restored_groups.groups
+
+        return mesh, features, mask, edge_groups
+
+
+    def rotate_edges(self, mesh, fe, edge_id, mask, edge_groups):
+
+        mesh_copy = deepcopy(mesh)
+        fe_copy = fe.clone()
+        mask_copy = deepcopy(mask)
+        edge_groups_copy = deepcopy(edge_groups)
+
+        # check if already removed this edge
+        if not mask[edge_id]:
+            print('edge_id %d already removed' % edge_id)
+            return fe
+
+        # 1. Get info
+        u, v_e_u, e_u, v, v_e_v, e_v = self.get_edge_hood_info(mesh, edge_id)
+
+        if len(e_u) == 3 and len(e_v) == 3:
+            return fe
+
+        # check if u and v edges are with boundaries
+        correct_config, u, v_e_u, e_u, v, v_e_v, e_v = \
+            self.check_u_v_boundaries(mesh, u, v_e_u, e_u, v, v_e_v, e_v)
+
+        if not correct_config:
+            return fe
+
+        # get outer edges by building faces
+        faces_u = self.build_faces_from_edges_hood(mesh, e_u)
+        faces_v = self.build_faces_from_edges_hood(mesh, e_v)
         all_faces = faces_u + faces_v
         all_edges = set().union(*all_faces)
         outer_edges = list(all_edges - set(e_u) - set(e_v))
-        outer_vertices = list(set(np.array([mesh.edges[e] for e in outer_edges]).flatten()))
+        outer_vertices = list(
+            set(np.array([mesh.edges[e] for e in outer_edges]).flatten()))
 
         # 2. Edges rotation
         # a. find diagonal vertices
@@ -678,12 +800,17 @@ class MeshPool(nn.Module):
                                          edge_groups, mask)
 
         # 3. Clear all doublets in the mesh
-        doublet_vertices, pairs_edges_vertices, doublet_pairs_edges = \
+        doublet_vertices, pairs_edges_vertices, doublet_pairs_edges, replaced_doublets_edges2 = \
             self.clear_doublets2(outer_vertices, mesh, mask, edge_groups)
 
-        # doublet_vertices = []
-        # pairs_edges_vertices = []
-        # doublet_pairs_edges = []
+        # return and restore old connections if we completely removed
+        # edge_id vertices
+        if len(mesh.ve[u]) == 0 and len(mesh.ve[v]) == 0:
+        # if len(doublet_pairs_edges) > 1:
+            mesh, features, mask, edge_groups = \
+                self.restore_data(mesh, mesh_copy, fe, fe_copy, mask,
+                                  mask_copy, edge_groups, edge_groups_copy)
+            return fe
 
         # find the new connections instead of the old doublets
         replaced_doublets_edges = []
@@ -700,10 +827,6 @@ class MeshPool(nn.Module):
                 edges_1 = mesh.ve[other_vertices.pop()]
                 edges_2 = mesh.ve[other_vertices.pop()]
                 # find if there is a common vertex connected to it (remove u)
-                # mutual_v = set(np.array(
-                #     [mesh.edges[e] for e in e1]).flatten()).intersection(
-                #     np.array([mesh.edges[e] for e in e2]).flatten())
-                # mutual_v.remove(u)
                 replaced_doublet = []
                 for e1 in edges_1:
                     v_e1 = set(mesh.edges[e1])
@@ -723,6 +846,7 @@ class MeshPool(nn.Module):
                     replaced_doublets_vertices.append(mesh.edges[replaced_doublet[0]])
                     replaced_doublets_vertices.append(mesh.edges[replaced_doublet[1]])
 
+        replaced_doublets_edges = list(np.array(replaced_doublets_edges).flatten()) + replaced_doublets_edges2
         replaced_doublets_vertices = list(np.array(replaced_doublets_vertices).flatten())
 
         # 4. create new edge features  # TODO should it be here?
@@ -735,24 +859,14 @@ class MeshPool(nn.Module):
         faces, faces_vertices = \
             self.get_all_faces_connected_to_vertex(mesh, u)
 
-        # b. find outer vertices
-        # outer_edges = list(set().union(*faces) - set(e_u))
-        v_e_u2, e_u2 = self.get_all_vertices_of_edges_connected_to_vertex(mesh, u)
-        outer_vertices = set(v_e_u2 + v_e_u + v_e_v + \
-                             diag_vertices_v + replaced_doublets_vertices) - \
-                         set(doublet_vertices) - set([u, v])
-
-        # new - update outer_edges
-        outer_edges = set(outer_edges).union(set(set().union(*replaced_doublets_edges))) -\
+        # b. update outer_edges
+        outer_edges = set(outer_edges).union(set(replaced_doublets_edges)) -\
                       set(set().union(*doublet_pairs_edges))
-
 
         # c. keep only faces with outer edges:
         keep = []
         for f_id, face in enumerate(faces):
-            # if np.any([len(set(mesh.edges[e]).intersection(outer_vertices))
-            #            == 2 for e in face]):
-            if np.any([e in outer_edges for e in face]):
+            if sum([e in outer_edges for e in face]) > 1:
                 keep.append(f_id)
         faces = (np.array(faces)[keep]).tolist()
         faces_vertices = (np.array(faces_vertices)[keep]).tolist()
@@ -764,6 +878,11 @@ class MeshPool(nn.Module):
             f, fv = \
                 self.get_all_faces_connected_to_vertex(mesh, ver)
             for i, fv_i in enumerate(fv):
+
+                # first ring faces can't have u or v vertices
+                if u in fv_i or v in fv_i:
+                    continue
+
                 faces_vertices_copy = faces_vertices.copy()
                 is_new = True
                 for cfv in faces_vertices_copy:
@@ -771,21 +890,6 @@ class MeshPool(nn.Module):
                     if diff == 0:
                         is_new = False
                         break
-                # if not edge_id == 13254000:
-                #     if is_new and np.any([o in f[i] for o in outer_edges]):
-                #         faces_vertices.append(fv_i)
-                #         faces.append(f[i])
-                # else:
-                #     if is_new and np.any([len(set(mesh.edges[efi]).intersection(outer_vertices)) == 2 for efi in f[i]]):
-                #         faces_vertices.append(fv_i)
-                #         faces.append(f[i])
-                # if is_new and np.any([len(
-                #         set(mesh.edges[efi]).intersection(outer_vertices)) == 2
-                #                       for efi in f[i]]):
-                # if is_new and np.any([efi in outer_vertices for efi in f[i]]):
-                #     faces_vertices.append(fv_i)
-                #     faces.append(f[i])
-                # without_boundary = np.all([self.has_boundaries2(mesh, e) == False for e in f[i]])
                 without_boundary = True
                 if is_new and np.any([e in outer_edges for e in f[i]]) and without_boundary:
                     faces_vertices.append(fv_i)
@@ -799,8 +903,14 @@ class MeshPool(nn.Module):
             f, fv = \
                 self.get_all_faces_connected_to_vertex(mesh, ver)
             for i, fv_i in enumerate(fv):
+
+                # second ring faces can't have u or v vertices
+                if u in fv_i or v in fv_i:
+                    continue
+
+                # check if this is a new face or not
                 faces_vertices_copy = faces_vertices.copy()
-                is_new = True
+                is_new = True  # init
                 for cfv in faces_vertices_copy:
                     diff = len(set(cfv).difference(set(fv_i)))
                     if diff == 0:
@@ -816,7 +926,8 @@ class MeshPool(nn.Module):
         for fi, face in enumerate(faces_second_ring):
             removed_faces, removed_faces_vertices = self.find_double_faces(mesh, face, faces_second_ring, faces_vertices_second_ring[fi], faces_vertices_second_ring)
             for irf, rf in enumerate(removed_faces):
-                if rf in faces:
+                faces_copy = faces.copy()
+                if rf in faces_copy:
                     faces.remove(rf)
                     faces_vertices.remove(removed_faces_vertices[irf])
 
