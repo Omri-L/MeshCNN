@@ -5,7 +5,7 @@ from torch.nn import ConstantPad2d
 class MeshUnion:
     def __init__(self, n, device=torch.device('cpu')):
         self.__size = n
-        self.rebuild_features = self.rebuild_features_average
+        self.rebuild_features = self.rebuild_features_average2
         self.groups = torch.eye(n, device=device)
 
     def union(self, source, target):
@@ -29,6 +29,15 @@ class MeshUnion:
         fe = torch.matmul(features.squeeze(-1), self.groups)
         occurrences = torch.sum(self.groups, 0).expand(fe.shape)
         fe = fe / occurrences
+        padding_b = target_edges - fe.shape[1]
+        if padding_b > 0:
+            padding_b = ConstantPad2d((0, padding_b, 0, 0), 0)
+            fe = padding_b(fe)
+        return fe
+
+    def rebuild_features_average2(self, features, fe, mask, target_edges):
+        fe = fe[:, mask, :]
+        fe = fe.squeeze()
         padding_b = target_edges - fe.shape[1]
         if padding_b > 0:
             padding_b = ConstantPad2d((0, padding_b, 0, 0), 0)
