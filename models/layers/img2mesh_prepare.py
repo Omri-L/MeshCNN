@@ -4,17 +4,16 @@ import ntpath
 
 
 def fill_mesh(mesh2fill, file: str, opt):
-    load_path = get_mesh_path(file, opt.num_aug)
+    load_path = get_mesh_path(file, opt.num_aug, prefix=mesh2fill.img_ind)
     if os.path.exists(load_path):
-        # mesh_data = np.load(load_path, encoding='latin1', allow_pickle=True)
-        mesh_data = from_scratch(file, opt, mesh2fill.img_data)
+        mesh_data = np.load(load_path, encoding='latin1', allow_pickle=True)
     else:
         mesh_data = from_scratch(file, opt, mesh2fill.img_data)
         np.savez_compressed(load_path, gemm_edges=mesh_data.gemm_edges, vs=mesh_data.vs, edges=mesh_data.edges,
                             edges_count=mesh_data.edges_count, ve=mesh_data.ve, v_mask=mesh_data.v_mask,
                             filename=mesh_data.filename, sides=mesh_data.sides,
                             edge_lengths=mesh_data.edge_lengths, edge_areas=mesh_data.edge_areas,
-                            features=mesh_data.features)
+                            features=mesh_data.features, img_data=mesh_data.img_data)
     mesh2fill.vs = mesh_data['vs']
     mesh2fill.edges = mesh_data['edges']
     mesh2fill.gemm_edges = mesh_data['gemm_edges']
@@ -29,10 +28,10 @@ def fill_mesh(mesh2fill, file: str, opt):
     mesh2fill.img_data = mesh_data['img_data']
 
 
-def get_mesh_path(file: str, num_aug: int):
+def get_mesh_path(file: str, num_aug: int, prefix: int):
     filename, _ = os.path.splitext(file)
     dir_name = os.path.dirname(filename)
-    prefix = os.path.basename(filename)
+    prefix = str(prefix)
     load_dir = os.path.join(dir_name, 'cache')
     load_file = os.path.join(load_dir, '%s_%03d.npz' % (prefix, np.random.randint(0, num_aug)))
     if not os.path.isdir(load_dir):

@@ -8,11 +8,12 @@ from models.layers.mesh_union import MeshUnion
 
 class Mesh:
 
-    def __init__(self, file=None, opt=None, hold_history=False, export_folder='', img_data=None):
+    def __init__(self, file=None, opt=None, hold_history=False, export_folder='', img_data=None, img_ind=None):
         self.vs = self.v_mask = self.filename = self.features = self.edge_areas = None
         self.edges = self.gemm_edges = self.sides = None
         self.pool_count = 0
         self.img_data = img_data
+        self.img_ind = img_ind
         if img_data is not None:
             from models.layers.img2mesh_prepare import fill_mesh
         else:

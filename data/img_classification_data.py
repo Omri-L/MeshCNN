@@ -10,6 +10,7 @@ class MeshCifar10(BaseDataset):
 
     def __init__(self, opt):
         BaseDataset.__init__(self, opt)
+        self.mesh_file = r'E:\Omri\FinalProject\QuadMesh\MeshCNN\datasets\cifar-10-batches-py\test.obj'  # TODO change
         self.opt = opt
         self.device = torch.device('cuda:{}'.format(opt.gpu_ids[0])) if opt.gpu_ids else torch.device('cpu')
         self.root = opt.dataroot
@@ -31,16 +32,17 @@ class MeshCifar10(BaseDataset):
         # self.paths = self.make_dataset_by_class(self.dir, self.class_to_idx, opt.phase)
         self.nclasses = len(self.classes)
         self.size = len(self.dataset.data)
-        # self.get_mean_std()  # todo?
+        self.get_mean_std()
         # modify for network later.
         opt.nclasses = self.nclasses
-        opt.input_nc = 6
-        self.mesh_file = r'E:\Omri\FinalProject\QuadMesh\MeshCNN\datasets\cifar-10-batches-py\test.obj'  # TODO change
+        opt.input_nc = self.ninput_channels
 
     def __getitem__(self, index):
         data = self.dataset.data[index]
         label = self.dataset.targets[index]
-        mesh = Mesh(file=self.mesh_file, opt=self.opt, hold_history=False, export_folder=self.opt.export_folder, img_data=data)
+        mesh = Mesh(file=self.mesh_file, opt=self.opt, hold_history=False,
+                    export_folder=self.opt.export_folder, img_data=data,
+                    img_ind=index)
         meta = {'mesh': mesh, 'label': label}
         # get edge features
         edge_features = mesh.extract_features()
