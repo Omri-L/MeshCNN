@@ -55,14 +55,14 @@ class MeshPool(nn.Module):
         fe = self.__fe[mesh_index, :, :mesh.edges_count].clone()
 
         ids = None
-        if self.__out_target == 430:
-            ids = [261, 199, 229, 453, 230, 323, 291, 292, 354, 385, 260, 195, 451, 416, 478, 322, 447, 168, 197, 479, 127, 198, 293, 277, 157, 193, 477, 162, 228, 159, 321, 262, 196, 231, 130, 160, 308, 200, 128, 169, 352, 126, 324, 353, 469, 290, 163, 97, 164, 455, 156, 339, 450, 383, 99, 467, 246, 226, 161]
-        elif self.__out_target == 380:
-            ids = [403, 405, 401, 427, 428, 306, 407, 429, 397, 277, 335, 239, 190, 425, 266, 400, 366, 375, 224, 419, 166, 417, 169, 376, 191, 143, 250, 165, 402, 409, 144, 404, 423, 399, 216, 421, 194, 305, 291, 395, 426, 168, 109, 346, 199, 106, 108, 215, 396, 131, 83]
-        elif self.__out_target == 300:
-            ids = [357, 377, 355, 154, 353, 153, 351, 173, 82, 359, 350, 135, 116, 375, 117, 79, 232, 172, 143, 378, 273, 190, 354, 288, 260, 206, 379, 124, 133, 352, 347, 189, 156, 221, 81, 367, 99, 361, 369, 356, 327, 318, 162, 373, 165, 142, 80, 134, 175, 233, 349, 317, 346, 126, 299, 147, 371, 119, 183, 374, 365, 246, 298, 207, 287, 247, 328, 223, 196, 198, 84, 316, 376, 345, 363, 213, 326, 179, 259, 261, 248, 301, 289, 151, 127, 274, 343, 164, 348, 214, 163, 118, 330, 319]
-        elif self.__out_target == 250:
-            ids = [276, 278, 279, 297, 272, 268, 245, 271, 277, 274, 181, 119, 298, 299, 202, 275, 295, 160, 273, 222, 246, 269, 267, 296, 270, 123, 133, 144, 242, 161, 294, 122, 203, 109, 182, 244, 134, 114, 93, 126, 107, 139, 91]
+        # if self.__out_target == 430:
+        #     ids = [261, 199, 229, 453, 230, 323, 291, 292, 354, 385, 260, 195, 451, 416, 478, 322, 447, 168, 197, 479, 127, 198, 293, 277, 157, 193, 477, 162, 228, 159, 321, 262, 196, 231, 130, 160, 308, 200, 128, 169, 352, 126, 324, 353, 469, 290, 163, 97, 164, 455, 156, 339, 450, 383, 99, 467, 246, 226, 161]
+        # elif self.__out_target == 380:
+        #     ids = [403, 405, 401, 427, 428, 306, 407, 429, 397, 277, 335, 239, 190, 425, 266, 400, 366, 375, 224, 419, 166, 417, 169, 376, 191, 143, 250, 165, 402, 409, 144, 404, 423, 399, 216, 421, 194, 305, 291, 395, 426, 168, 109, 346, 199, 106, 108, 215, 396, 131, 83]
+        # elif self.__out_target == 300:
+        #     ids = [357, 377, 355, 154, 353, 153, 351, 173, 82, 359, 350, 135, 116, 375, 117, 79, 232, 172, 143, 378, 273, 190, 354, 288, 260, 206, 379, 124, 133, 352, 347, 189, 156, 221, 81, 367, 99, 361, 369, 356, 327, 318, 162, 373, 165, 142, 80, 134, 175, 233, 349, 317, 346, 126, 299, 147, 371, 119, 183, 374, 365, 246, 298, 207, 287, 247, 328, 223, 196, 198, 84, 316, 376, 345, 363, 213, 326, 179, 259, 261, 248, 301, 289, 151, 127, 274, 343, 164, 348, 214, 163, 118, 330, 319]
+        # elif self.__out_target == 250:
+        #     ids = [276, 278, 279, 297, 272, 268, 245, 271, 277, 274, 181, 119, 298, 299, 202, 275, 295, 160, 273, 222, 246, 269, 267, 296, 270, 123, 133, 144, 242, 161, 294, 122, 203, 109, 182, 244, 134, 114, 93, 126, 107, 139, 91]
 
         # ids = [234, 203, 44, 168, 43, 137, 69, 75, 160]
         # ids = [16953, 13019, 18222, 9867, 541, 17293, 12942, 13217, 14538, 12323, 15846, 11915, 4741, 13079, 15130, 17372, 4831, 14193, 13802, 16145, 10696, 3023, 5939, 2307, 17054, 17451, 7235, 12619, 16337, 16474, 7199, 4663, 7445, 12322, 9974, 8431, 4618, 8933, 12393, 17693, 3509, 6739, 2101, 4681, 7233, 7810, 15245, 5018, 14288, 9117, 7214, 16966, 17040, 16473, 13445, 5602, 4591, 8430, 15431, 16172, 15433, 13779, 10531, 1924, 14903, 5774, 5234, 6835, 15534, 3035, 16198, 13388, 6803, 8426, 12877, 6667, 8844, 10161, 16653, 16482, 6688, 16790, 9463, 4240, 11770, 16120, 18494, 2149, 16463, 2440, 3377, 7793, 13382, 10518, 13086, 4680, 10708, 1798, 5012, 7469, 10692, 17921, 4880, 4586, 13096, 4817, 8932, 7685, 10919, 4938, 13862, 18008, 17144, 7367, 15278, 16343, 6884, 3244, 4628, 14843, 7225, 17412, 16585, 7092, 16485, 9421, 2814, 10212, 5414, 12615, 13193, 10203, 2343, 13848, 17411, 9977, 3515, 16436, 1926, 12805, 7537, 10807, 14197, 14177, 6877, 10208, 6108, 9000, 13268, 14191, 13413, 8544, 7473, 10688, 12776, 6805, 14625, 5768, 9601, 11856, 6573, 8423, 15314, 15112, 13093, 5235, 2811, 14285, 15689, 16429, 12657, 7458, 6245, 13381, 9446, 2145, 2899, 2072, 9408, 17418, 4923, 2635, 13417, 3929, 9724, 2869, 7765, 16580, 13800, 11005, 3736, 15989, 12713, 13294, 18228, 4620, 6570, 2148, 18277, 14365, 14301, 15640, 2466, 12822, 15003, 4823, 17687, 11859, 13472, 5169, 8843, 14534, 14214, 5118, 16168, 4405, 14588, 6284, 13372, 14147, 17253, 2868, 16331, 7800, 15998, 16466, 8928, 6888, 6348, 9407, 3413, 5763, 2637, 14262, 10174, 15357, 12621, 8422, 13325, 18258, 16399, 6238, 7252, 15971, 12188, 5804, 16113, 17297, 16166, 3931, 9050, 4756, 17408, 8414, 14537, 11911, 2470, 4643, 15509, 12816, 11228, 6742, 17784, 12618, 7744, 2463, 16199, 2450, 9602, 10699]
@@ -136,7 +136,7 @@ class MeshPool(nn.Module):
         return v_e_u, e_u
 
     @staticmethod
-    def get_vertices_connections_via_another_edge(mesh, v1, v2):
+    def get_vertices_connections_via_another_edge(mesh, v1, v2, allowed_edges=None):
         """
         Find mutual connection (vertex) via another edges from vertices v1 and
         v2.
@@ -144,6 +144,9 @@ class MeshPool(nn.Module):
         # get all edges connected to v1 or v2
         e_v1 = mesh.ve[v1]
         e_v2 = mesh.ve[v2]
+        if allowed_edges is not None:
+            e_v1 = [e for e in e_v1 if e in allowed_edges]
+            e_v2 = [e for e in e_v2 if e in allowed_edges]
         # get all vertices of edges e_v1 or e_v2
         v_e_v1 = set(mesh.edges[e_v1].reshape(-1))
         v_e_v2 = set(mesh.edges[e_v2].reshape(-1))
@@ -846,7 +849,16 @@ class MeshPool(nn.Module):
 
         return doublet_vertices, pairs_edges_vertices, doublet_pairs_edges, replaced_doublets_edges
 
-    def find_diag_vertices(self, mesh, u, e_u, v_e_u):
+    def find_diag_vertices(self, mesh, edge_id, u, e_u, v_e_u):
+
+        # find outer edges
+        all_edges = list(
+            set(np.array([mesh.gemm_edges[e] for e in e_u]).flatten()))
+        # all_outer_vertices = set(
+            # np.array([mesh.edges[e] for e in all_edges]).flatten())
+        # all_outer_vertices.remove(u)
+        # diagonal_vertices = list(all_outer_vertices - set(v_e_u))
+        outer_edges = list(set(all_edges) - set(e_u))
 
         # for each pair of vertices in v_e_u find a connection via another edge
         diag_vertices = []  # diagonal vertices to vertex u
@@ -859,10 +871,10 @@ class MeshPool(nn.Module):
                 if j in checked_vertex:
                     continue  # do not check vertex twice
 
-                # find mutual vertices via another edges start from v_i and v_j
+                # find mutual vertices via another outer edge start from v_i and v_j
                 connection_vertices = \
                     self.get_vertices_connections_via_another_edge(mesh, v_i,
-                                                                   v_j)
+                                                                   v_j, outer_edges)
                 # save only the new vertex that is not the original vertex u
                 for con_vertex in connection_vertices:
                     if not con_vertex == u and con_vertex not in diag_vertices:
@@ -1078,9 +1090,9 @@ class MeshPool(nn.Module):
     def edge_rotations(self, edge_id, u, e_u, v_e_u, v, e_v, v_e_v, mesh, fe, mask, edge_groups):
         # 1. Find diagonal vertices
         diag_vertices, diag_vertex_to_edges_dict = \
-            self.find_diag_vertices(mesh, u, e_u, v_e_u)
+            self.find_diag_vertices(mesh, edge_id, u, e_u, v_e_u)
         # diag_vertices_v, diag_vertex_to_edges_dict_v = \
-        #     self.find_diag_vertices(mesh, v, e_v, v_e_v)
+        #     self.find_diag_vertices(mesh, edge_id, v, e_v, v_e_v)
 
         # 2. Rotate edges - for each edge goes from u - change the original
         # connection to the optional diagonal connection (direction should be
@@ -1160,9 +1172,9 @@ class MeshPool(nn.Module):
         # 2. Edges rotation
         # a. find diagonal vertices
         diag_vertices, diag_vertex_to_edges_dict = \
-            self.find_diag_vertices(mesh, u, e_u, v_e_u)
+            self.find_diag_vertices(mesh, edge_id, u, e_u, v_e_u)
         diag_vertices_v, diag_vertex_to_edges_dict_v = \
-            self.find_diag_vertices(mesh, v, e_v, v_e_v)
+            self.find_diag_vertices(mesh, edge_id, v, e_v, v_e_v)
 
         # b. rotate - for each edge goes from u - change the original
         # connection to the optional diagonal connection (direction should be
