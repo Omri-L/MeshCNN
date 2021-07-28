@@ -56,13 +56,13 @@ class MeshPool(nn.Module):
 
         ids = None
         if self.__out_target == 430:
-            ids = [137, 248, 168, 105, 152, 75, 173, 187, 123, 154, 306, 242, 218, 207, 132, 121, 275, 115, 150, 247, 99, 181, 303, 16, 246, 208 ]
+            ids = [261, 199, 229, 453, 230, 323, 291, 292, 354, 385, 260, 195, 451, 416, 478, 322, 447, 168, 197, 479, 127, 198, 293, 277, 157, 193, 477, 162, 228, 159, 321, 262, 196, 231, 130, 160, 308, 200, 128, 169, 352, 126, 324, 353, 469, 290, 163, 97, 164, 455, 156, 339, 450, 383, 99, 467, 246, 226, 161]
         elif self.__out_target == 380:
-            ids = [147, 123, 205, 401, 75, 405, 19, 201, 407, 44, 175, 403, 207, 226, 124, 253, 16, 400, 102, 101, 151, 250, 413, 76, 411, 186, 233]
-        # elif self.__out_target == 300:
-        #     ids = [379, 215, 148, 124, 104, 235, 3, 105, 100, 102, 163, 43, 125, 166, 22, 81, 259, 19, 139, 147, 57, 130, 109]
-        # elif self.__out_target == 250:
-        #     ids = [299, 159, 193, 65, 146, 173, 160, 86, 138, 176, 148, 0, 130, 214, 36, 118, 3, 134, 69, 106, 122, 22, 47, 4, 7, 110, 34, 191, 240, 141, 39, 158, 161, 41, 19, 129, 25, 90, 43, 117, 42, 211, 35, 116, 271, 31, 137, 2, 144, 16, 142, 109, 125, 270, 147, 143]
+            ids = [403, 405, 401, 427, 428, 306, 407, 429, 397, 277, 335, 239, 190, 425, 266, 400, 366, 375, 224, 419, 166, 417, 169, 376, 191, 143, 250, 165, 402, 409, 144, 404, 423, 399, 216, 421, 194, 305, 291, 395, 426, 168, 109, 346, 199, 106, 108, 215, 396, 131, 83]
+        elif self.__out_target == 300:
+            ids = [357, 377, 355, 154, 353, 153, 351, 173, 82, 359, 350, 135, 116, 375, 117, 79, 232, 172, 143, 378, 273, 190, 354, 288, 260, 206, 379, 124, 133, 352, 347, 189, 156, 221, 81, 367, 99, 361, 369, 356, 327, 318, 162, 373, 165, 142, 80, 134, 175, 233, 349, 317, 346, 126, 299, 147, 371, 119, 183, 374, 365, 246, 298, 207, 287, 247, 328, 223, 196, 198, 84, 316, 376, 345, 363, 213, 326, 179, 259, 261, 248, 301, 289, 151, 127, 274, 343, 164, 348, 214, 163, 118, 330, 319]
+        elif self.__out_target == 250:
+            ids = [276, 278, 279, 297, 272, 268, 245, 271, 277, 274, 181, 119, 298, 299, 202, 275, 295, 160, 273, 222, 246, 269, 267, 296, 270, 123, 133, 144, 242, 161, 294, 122, 203, 109, 182, 244, 134, 114, 93, 126, 107, 139, 91]
 
         # ids = [234, 203, 44, 168, 43, 137, 69, 75, 160]
         # ids = [16953, 13019, 18222, 9867, 541, 17293, 12942, 13217, 14538, 12323, 15846, 11915, 4741, 13079, 15130, 17372, 4831, 14193, 13802, 16145, 10696, 3023, 5939, 2307, 17054, 17451, 7235, 12619, 16337, 16474, 7199, 4663, 7445, 12322, 9974, 8431, 4618, 8933, 12393, 17693, 3509, 6739, 2101, 4681, 7233, 7810, 15245, 5018, 14288, 9117, 7214, 16966, 17040, 16473, 13445, 5602, 4591, 8430, 15431, 16172, 15433, 13779, 10531, 1924, 14903, 5774, 5234, 6835, 15534, 3035, 16198, 13388, 6803, 8426, 12877, 6667, 8844, 10161, 16653, 16482, 6688, 16790, 9463, 4240, 11770, 16120, 18494, 2149, 16463, 2440, 3377, 7793, 13382, 10518, 13086, 4680, 10708, 1798, 5012, 7469, 10692, 17921, 4880, 4586, 13096, 4817, 8932, 7685, 10919, 4938, 13862, 18008, 17144, 7367, 15278, 16343, 6884, 3244, 4628, 14843, 7225, 17412, 16585, 7092, 16485, 9421, 2814, 10212, 5414, 12615, 13193, 10203, 2343, 13848, 17411, 9977, 3515, 16436, 1926, 12805, 7537, 10807, 14197, 14177, 6877, 10208, 6108, 9000, 13268, 14191, 13413, 8544, 7473, 10688, 12776, 6805, 14625, 5768, 9601, 11856, 6573, 8423, 15314, 15112, 13093, 5235, 2811, 14285, 15689, 16429, 12657, 7458, 6245, 13381, 9446, 2145, 2899, 2072, 9408, 17418, 4923, 2635, 13417, 3929, 9724, 2869, 7765, 16580, 13800, 11005, 3736, 15989, 12713, 13294, 18228, 4620, 6570, 2148, 18277, 14365, 14301, 15640, 2466, 12822, 15003, 4823, 17687, 11859, 13472, 5169, 8843, 14534, 14214, 5118, 16168, 4405, 14588, 6284, 13372, 14147, 17253, 2868, 16331, 7800, 15998, 16466, 8928, 6888, 6348, 9407, 3413, 5763, 2637, 14262, 10174, 15357, 12621, 8422, 13325, 18258, 16399, 6238, 7252, 15971, 12188, 5804, 16113, 17297, 16166, 3931, 9050, 4756, 17408, 8414, 14537, 11911, 2470, 4643, 15509, 12816, 11228, 6742, 17784, 12618, 7744, 2463, 16199, 2450, 9602, 10699]
@@ -85,28 +85,33 @@ class MeshPool(nn.Module):
         self.__updated_fe[mesh_index] = fe
         print('finish pooling')
 
+    def clean_mesh_operations(self, mesh, mask, edge_groups):
+
+        # clear doublets and build new hood
+        doublet_cleared = self.clear_doublets3(mesh, mask, edge_groups)
+        while doublet_cleared:
+            doublet_cleared = self.clear_doublets3(mesh, mask, edge_groups)
+
+        # clear singlets and build new hood
+        # self.clear_singlets(mesh, mask, edge_groups)
+        return
+
     def __pool_edge(self, mesh, edge_id, fe, mask, edge_groups):
 
+        # 1. clean mesh operations
+        self.clean_mesh_operations(mesh, mask, edge_groups)  # should return new fe
+
+        # 2. check if edge_id have boundaries
         if self.has_boundaries(mesh, edge_id):
             return False, fe
 
-        if not np.all(mesh.gemm_edges[mesh.gemm_edges[edge_id],
-                                      mesh.sides[edge_id]] == edge_id):
-            new_sides = [-1, -1, -1, -1, -1, -1]
-            for i_en, en in enumerate(mesh.gemm_edges[edge_id]):
-                if en == -1:
-                    continue
-                side = np.where(mesh.gemm_edges[en] == edge_id)[0]
-                if len(side) > 0:
-                    new_sides[i_en] = side[0]
-
-            mesh.sides[edge_id] = new_sides
-
+        # TODO check if we really need this if
         if self.__clean_side(mesh, edge_id, mask, edge_groups, 0) \
                 and self.__clean_side(mesh, edge_id, mask, edge_groups, 3) \
                 and self.__is_one_ring_valid(mesh, edge_id):
 
-            fe = self.mesh_decimation(mesh, fe, edge_id, mask, edge_groups)
+            self.edge_collapse(edge_id, mesh, fe, mask, edge_groups)
+            # fe = self.mesh_decimation(mesh, fe, edge_id, mask, edge_groups)
             # mesh.merge_vertices(edge_id)  # TODO should update this method
             return True, fe
         else:
@@ -146,8 +151,7 @@ class MeshPool(nn.Module):
         inter_vertices = set.intersection(v_e_v1, v_e_v2)
         return inter_vertices
 
-    @staticmethod
-    def collapse_other_vertex_v(mesh, u, v, e_v, diag_vertices,
+    def collapse_other_vertex_v(self, mesh, u, v, e_v, diag_vertices,
                                 new_features_combination_dict, edge_groups,
                                 mask):
         """
@@ -160,7 +164,14 @@ class MeshPool(nn.Module):
         Returns:
 
         """
+
+        if self.clear_doublets3(mesh, mask, edge_groups, [v]):
+            return
+
+        old_mesh = deepcopy(mesh)
+
         e_to_collapse = []  # edges we should remove
+        collapsed_e_to_orig_e_dict = dict()  # to which edge the collpased edge combined with
         e_to_reconnect_with_u = []  # edges we should re-connect with vertex u
 
         for e in e_v:
@@ -176,6 +187,7 @@ class MeshPool(nn.Module):
                     if u_e in mesh.edges[key]:
                         edge_to_add_feature = key
                         new_features_combination_dict[key].append(e)
+                        collapsed_e_to_orig_e_dict[e] = key
                         break
                 # collapse
                 MeshPool.__remove_group(mesh, edge_groups, e)  # TODO needed?
@@ -193,22 +205,157 @@ class MeshPool(nn.Module):
                 else:
                     mesh.edges[e, 1] = u
 
-        return e_to_collapse, e_to_reconnect_with_u
+        # fix hood for edges which re-connected to u
+        already_built_edges_hood = []
+        for e in e_to_reconnect_with_u:
+            hood = old_mesh.gemm_edges[e]
+            edges_to_check = [e] + list(hood)
+            for edge in edges_to_check:
+                if edge in already_built_edges_hood or edge in e_to_collapse:
+                    continue
+
+                already_built_edges_hood.append(edge)
+                old_hood = old_mesh.gemm_edges[edge]
+                new_hood = mesh.gemm_edges[edge]
+                # replace any e_to_collapse edge by the matched edge
+                for e_collapse in e_to_collapse:
+                    if np.any([h == e_collapse for h in old_hood]):
+                        e_collapse_pos = \
+                        np.where([h == e_collapse for h in old_hood])[0][0]
+                        new_hood[e_collapse_pos] = collapsed_e_to_orig_e_dict[e_collapse]
+
+        # now fix hood for the rotated edges
+        for key in collapsed_e_to_orig_e_dict:
+            edge = collapsed_e_to_orig_e_dict[key]
+            old_hood = old_mesh.gemm_edges[edge]
+            new_hood = mesh.gemm_edges[edge]
+            already_built_edges_hood.append(edge)
+            if key in old_hood[0:3]:
+                if edge not in old_mesh.gemm_edges[key, 0:3]:
+                    new_hood[0:3] = old_mesh.gemm_edges[key, 0:3]
+                else:
+                    new_hood[0:3] = old_mesh.gemm_edges[key, 3:6]
+            elif key in old_hood[3:6]:
+                if edge not in old_mesh.gemm_edges[key, 0:3]:
+                    new_hood[3:6] = old_mesh.gemm_edges[key, 0:3]
+                else:
+                    new_hood[3:6] = old_mesh.gemm_edges[key, 3:6]
+            else:
+                assert(False)
+
+            for i, e in enumerate(new_hood):
+                if e in collapsed_e_to_orig_e_dict.keys():
+                    new_hood[i] = collapsed_e_to_orig_e_dict[e]
+
+        # fix hood order:
+        for edge in already_built_edges_hood:
+            hood = mesh.gemm_edges[edge]
+            if mesh.edges[hood[2], 0] not in mesh.edges[hood[3]] and \
+                mesh.edges[hood[2], 1] not in mesh.edges[hood[3]]:
+                hood[5], hood[3] = hood[3], hood[5]
+
+        # fix sides
+        for edge in already_built_edges_hood:
+            new_sides = [-1, -1, -1, -1, -1, -1]
+            for i_en, en in enumerate(mesh.gemm_edges[edge]):
+                if en == -1:
+                    continue
+                side = np.where(mesh.gemm_edges[en] == edge)[0]
+                if len(side) > 0:
+                    new_sides[i_en] = side[0]
+
+            mesh.sides[edge] = new_sides
+
+        return
 
     @staticmethod
-    def rotate_edges_and_connections(mesh, origin_vertex, edges_to_change,
+    def edge_rotation_new_hood(mesh, old_mesh, e, new_vertex):
+
+        old_hood = old_mesh.gemm_edges[e]
+        # find the two edges in e hood which connected to the new_vertex
+        new_vertex_old_optional_edges_pairs = [[0, 1], [1, 2], [3, 4], [4, 5]]
+
+        for pair_case, pair in enumerate(new_vertex_old_optional_edges_pairs):
+            v0 = set(old_mesh.edges[old_hood[pair[0]]])
+            v1 = set(old_mesh.edges[old_hood[pair[1]]])
+            mutual_v = v0.intersection(v1)
+            if len(mutual_v) == 1:
+                if new_vertex == mutual_v.pop():
+                    break
+
+        if pair_case == 0:
+            new_hood = [old_hood[1], -1, old_hood[2], old_hood[3], old_hood[5],
+                        old_hood[0]]
+            # find the missed edge
+            v0 = set(mesh.edges[new_hood[0]]).difference(
+                set(old_mesh.edges[new_hood[0]]))
+            if len(v0) == 0:
+                v0 = set(mesh.edges[new_hood[2]]).difference(
+                    set(old_mesh.edges[new_hood[2]]))
+            v1 = set(old_mesh.edges[new_hood[0]]).intersection(
+                set(old_mesh.edges[new_hood[2]]))
+            missed_e = set(old_mesh.ve[v0.pop()]).intersection(set(old_mesh.ve[v1.pop()]))
+            new_hood[1] = missed_e.pop()
+        elif pair_case == 1:
+            new_hood = [old_hood[0], -1, old_hood[1], old_hood[2], old_hood[3],
+                        old_hood[5]]
+            # find the missed edge
+            v0 = set(mesh.edges[new_hood[0]]).difference(
+                set(old_mesh.edges[new_hood[0]]))
+            if len(v0) == 0:
+                v0 = set(mesh.edges[new_hood[2]]).difference(
+                    set(old_mesh.edges[new_hood[2]]))
+            v1 = set(old_mesh.edges[new_hood[0]]).intersection(
+                set(old_mesh.edges[new_hood[2]]))
+            missed_e = set(old_mesh.ve[v0.pop()]).intersection(set(old_mesh.ve[v1.pop()]))
+            new_hood[1] = missed_e.pop()
+        elif pair_case == 2:
+            new_hood = [old_hood[0], old_hood[2], old_hood[3], old_hood[4], -1,
+                        old_hood[5]]
+            # find the missed edge
+            v0 = set(mesh.edges[new_hood[3]]).difference(
+                set(old_mesh.edges[new_hood[3]]))
+            if len(v0) == 0:
+                v0 = set(mesh.edges[new_hood[5]]).difference(
+                    set(old_mesh.edges[new_hood[5]]))
+            v1 = set(old_mesh.edges[new_hood[3]]).intersection(
+                set(old_mesh.edges[new_hood[5]]))
+            missed_e = set(old_mesh.ve[v0.pop()]).intersection(set(old_mesh.ve[v1.pop()]))
+            new_hood[4] = missed_e.pop()
+        elif pair_case == 3:
+            new_hood = [old_hood[5], old_hood[0], old_hood[2], old_hood[3], -1,
+                        old_hood[4]]
+            # find the missed edge
+            v0 = set(mesh.edges[new_hood[3]]).difference(
+                set(old_mesh.edges[new_hood[3]]))
+            if len(v0) == 0:
+                v0 = set(mesh.edges[new_hood[5]]).difference(
+                    set(old_mesh.edges[new_hood[5]]))
+            v1 = set(old_mesh.edges[new_hood[3]]).intersection(
+                set(old_mesh.edges[new_hood[5]]))
+            missed_e = set(old_mesh.ve[v0.pop()]).intersection(set(old_mesh.ve[v1.pop()]))
+            new_hood[4] = missed_e.pop()
+        else:
+            assert(False)
+
+        return new_hood
+
+    def rotate_edges_and_connections(self, mesh, origin_vertex, edges_to_change,
                                      optional_vertices,
                                      optional_vertex_to_edges_dict):
         """
         For each edge goes from original vertex: change the original connection
         to another optional vertex connection in a way that all vertices have
         a new connection (it will make sure the rotation for all will be CCW or
-        CW)
+        CW).
+        Re-build edge neighborhoods according to the edge rotation.
         """
+        old_mesh = deepcopy(mesh)
         edges_to_change_cpy = edges_to_change.copy()  # make a copy
         optional_vertices_cpy = optional_vertices.copy()  # make a copy
         e = edges_to_change_cpy[0]  # first edge in list (init)
         new_features_combination_dict = dict()
+        edge_to_new_vertex_connection_dict = dict()
         while len(edges_to_change_cpy) > 0:
             edges_to_change_cpy.remove(e)
             # check which connection is possible according to connectivity
@@ -217,13 +364,9 @@ class MeshPool(nn.Module):
             # choose one vertex randomly
             random.seed(0)
             v_e_new = random.choice(list(optional_new_v))
+            edge_to_new_vertex_connection_dict[e] = v_e_new
             # remove it from options
             optional_vertices_cpy.remove(v_e_new)
-            # print('before - edge %d vertices %d %d' % (e, mesh.edges[e, 0],
-            #                                            mesh.edges[e, 1]))
-            # print(
-            #     'after - edge %d vertices %d %d' % (e, origin_vertex, v_e_new))
-
             v_e_orig = list(mesh.edges[e, :].copy())
             v_e_orig.remove(origin_vertex)
 
@@ -242,57 +385,38 @@ class MeshPool(nn.Module):
             other_e_matched.remove(e)
             e = other_e_matched[0]
 
-        # new_features_dict = dict()
-        # for k in new_features_combination_dict.keys():
-        #     combination = new_features_combination_dict[k]
-        #     new_feature = torch.sum(fe[:, combination, :], axis=1)/len(combination)
-        #     new_feature = new_feature.reshape(new_feature.shape[0], 1, -1)
-        #     new_features_dict[k] = new_feature
+        edge_hood_built = []
+        for e in edge_to_new_vertex_connection_dict:
+            # build the new hood for rotated edges
+            mesh.gemm_edges[e] = self.edge_rotation_new_hood(mesh, old_mesh, e,
+                                                             edge_to_new_vertex_connection_dict[e])
+            edge_hood_built.append(e)
 
-        return mesh, new_features_combination_dict #, new_features_dict
+        # re-build new hood for the other hood edges of rotated edges
+        for e in edge_to_new_vertex_connection_dict:
+            new_hood = list(mesh.gemm_edges[e])
+            new_faces = [new_hood[0:3] + [e], new_hood[3:6] + [e]]
+            for edge in new_hood:
+                if edge in edge_hood_built:
+                    continue
+                else:
+                    self.build_new_hood_for_diag_collapse(mesh, edge, edges_to_change,
+                                                      new_faces)
+                    edge_hood_built.append(edge)
 
-    def rebuild_edge_hood(self, mesh, edge_id):
-        v1, v2 = mesh.edges[edge_id]
+        # fix sides
+        for edge in edge_hood_built:
+            new_sides = [-1, -1, -1, -1, -1, -1]
+            for i_en, en in enumerate(mesh.gemm_edges[edge]):
+                if en == -1:
+                    continue
+                side = np.where(mesh.gemm_edges[en] == edge)[0]
+                if len(side) > 0:
+                    new_sides[i_en] = side[0]
 
-        v_e_v1, e_v1 = self.get_all_vertices_of_edges_connected_to_vertex(mesh,
-                                                                          v1)
-        v_e_v2, e_v2 = self.get_all_vertices_of_edges_connected_to_vertex(mesh,
-                                                                          v2)
-    # def get_all_faces_connected_to_vertex(self, mesh, u):
-    #     """
-    #     Gets all the faces connected to vertex u
-    #     """
-    #     v_e_u, e_u = self.get_all_vertices_of_edges_connected_to_vertex(mesh,
-    #                                                                     u)
-    #     checked_vertex = []
-    #     faces_vertices = []
-    #     faces = []
-    #     for i, v_i in enumerate(v_e_u):
-    #         checked_vertex.append(i)
-    #         for j, v_j in enumerate(v_e_u):
-    #             if j in checked_vertex:
-    #                 continue  # do not check vertex twice
-    #             face = []
-    #             face.append(v_i)
-    #             # find mutual vertices via another edges start from v_i and v_j
-    #             connection_vertices = \
-    #                 self.get_vertices_connections_via_another_edge(mesh, v_i,
-    #                                                                v_j)
-    #             if len(connection_vertices) == 1:
-    #                 continue
-    #             face.append(connection_vertices.pop())
-    #             face.append(v_j)
-    #             face.append(connection_vertices.pop())
-    #             faces_vertices.append(face)
-    #             face_edges = []
-    #             for i in range(len(face)):
-    #                 fe = self.get_edge_from_two_vertices(mesh, face[i],
-    #                                                      face[(i + 1) % 4])
-    #                 assert (fe is not None)
-    #                 face_edges.append(fe)
-    #             faces.append(set(face_edges))
-    #
-    #     return set(faces), face_edges, set(faces_vertices)
+            mesh.sides[edge] = new_sides
+
+        return mesh, new_features_combination_dict
 
     def get_all_faces_connected_to_vertex(self, mesh, u):
         """
@@ -308,8 +432,7 @@ class MeshPool(nn.Module):
             for j, v_j in enumerate(v_e_u):
                 if j in checked_vertex:
                     continue  # do not check vertex twice
-                face_vertices = []
-                face_vertices.append(v_i)
+                face_vertices = [v_i]
                 # find mutual vertices via another edges start from v_i and v_j
                 connection_vertices = \
                     self.get_vertices_connections_via_another_edge(mesh, v_i,
@@ -537,9 +660,13 @@ class MeshPool(nn.Module):
 
     def find_doublets2(self, mesh, vertices):
         doublet_pair_edges = []
-        # doublet_vertices = np.where(np.array([len(mesh.ve[j]) for j in range(len(mesh.ve))]) == 2)[0]
-        doublet_vertices_indices = np.where(np.array([len(mesh.ve[v]) for v in vertices]) == 2)[0]
-        doublet_vertices = [vertices[i] for i in doublet_vertices_indices]
+        if vertices is None:
+            doublet_vertices = np.where(np.array([len(mesh.ve[j]) for j in range(len(mesh.ve))]) == 2)[0]
+            doublet_vertices = list(doublet_vertices)
+        else:
+            doublet_vertices_indices = np.where(np.array([len(mesh.ve[v]) for v in vertices]) == 2)[0]
+            doublet_vertices = [vertices[i] for i in doublet_vertices_indices]
+
         if len(doublet_vertices) > 0:
             doublet_pair_edges = [mesh.ve[v].copy() for v in doublet_vertices]
 
@@ -553,7 +680,90 @@ class MeshPool(nn.Module):
 
         return doublet_vertices, doublet_pair_edges
 
-    def clear_doublets2(self, vertices, mesh, mask, edge_groups):
+    def clear_doublets3(self, mesh, mask, edge_groups, vertices=None):
+        doublet_vertices, doublet_pairs_edges = self.find_doublets2(mesh, vertices)
+        if len(doublet_vertices) == 0:
+            return False
+
+        for pair in doublet_pairs_edges:
+            old_mesh = deepcopy(mesh)
+            old_hood = old_mesh.gemm_edges[pair[0]]
+            replaced_edges = [e for e in old_hood[0:3] if e not in pair]
+            other_edges_to_fix = [e for e in old_hood[3:6] if e not in pair]
+            new_vertex = set(old_mesh.edges[replaced_edges[0]]).intersection(set(old_mesh.edges[replaced_edges[1]])).pop()
+
+            # re-build hood
+            # match doublet edge with replaced edge
+            doubelt_to_replaced_edge = dict()
+            v_e = set(old_mesh.edges[pair[0]])  # vertices of doublet edge
+            v_r = set(old_mesh.edges[replaced_edges[0]])  # vertices of potential replaced edge
+            mutual_v = v_e.intersection(v_r)
+            if len(mutual_v) == 1:
+                doubelt_to_replaced_edge[pair[0]] = replaced_edges[0]
+                doubelt_to_replaced_edge[pair[1]] = replaced_edges[1]
+            else:
+                doubelt_to_replaced_edge[pair[0]] = replaced_edges[1]
+                doubelt_to_replaced_edge[pair[1]] = replaced_edges[0]
+
+            # fix other edges hood
+            for edge in other_edges_to_fix:
+                new_hood = mesh.gemm_edges[edge]
+                for i, e in enumerate(new_hood):
+                    if e in doubelt_to_replaced_edge.keys():
+                        new_hood[i] = doubelt_to_replaced_edge[e]
+
+            # fix other side hood
+            doubelt_to_replaced_edge_other_side = dict()
+            v_e = set(old_mesh.edges[pair[0]])  # vertices of doublet edge
+            v_r = set(old_mesh.edges[other_edges_to_fix[0]])  # vertices of potential replaced edge
+            mutual_v = v_e.intersection(v_r)
+            if len(mutual_v) == 1:
+                doubelt_to_replaced_edge_other_side[pair[0]] = other_edges_to_fix[0]
+                doubelt_to_replaced_edge_other_side[pair[1]] = other_edges_to_fix[1]
+            else:
+                doubelt_to_replaced_edge_other_side[pair[0]] = other_edges_to_fix[1]
+                doubelt_to_replaced_edge_other_side[pair[1]] = other_edges_to_fix[0]
+
+            for edge in replaced_edges:
+                new_hood = mesh.gemm_edges[edge]
+                for i, e in enumerate(new_hood):
+                    if e in pair:
+                        new_hood[i] = doubelt_to_replaced_edge_other_side[e]
+
+            # fix hood order:
+            edges_list = replaced_edges + other_edges_to_fix
+            for edge in edges_list:
+                hood = mesh.gemm_edges[edge]
+                if mesh.edges[hood[2], 0] not in mesh.edges[hood[3]] and \
+                        mesh.edges[hood[2], 1] not in mesh.edges[hood[3]]:
+                    hood[5], hood[3] = hood[3], hood[5]
+            # fix sides
+            for edge in edges_list:
+                new_sides = [-1, -1, -1, -1, -1, -1]
+                for i_en, en in enumerate(mesh.gemm_edges[edge]):
+                    if en == -1:
+                        continue
+                    side = np.where(mesh.gemm_edges[en] == edge)[0]
+                    if len(side) > 0:
+                        new_sides[i_en] = side[0]
+
+                mesh.sides[edge] = new_sides
+
+            # remove doublet from mesh:
+            for e in pair:
+                u, v = mesh.edges[e]
+                MeshPool.__remove_group(mesh, edge_groups, e)  # TODO needed?
+                mask[e] = False
+                mesh.remove_edge(e)
+                mesh.edges[e] = [-1, -1]  # TODO needed?
+                mesh.edges_count -= 1
+                mesh.gemm_edges[e] = [-1, -1, -1, -1, -1, -1]
+
+        return True
+
+
+
+    def clear_doublets2(self, mesh, mask, edge_groups, vertices=None):
         doublet_vertices, doublet_pairs_edges = self.find_doublets2(mesh, vertices)
         if len(doublet_vertices) == 0:
             return [], [], [], []
@@ -620,7 +830,7 @@ class MeshPool(nn.Module):
         replaced_doublets_edges = list(
             np.array(replaced_doublets_edges).flatten())
 
-        out = self.clear_doublets2(replaced_doublets_vertices, mesh, mask, edge_groups)
+        out = self.clear_doublets2(mesh, mask, edge_groups, replaced_doublets_vertices)
         if len(out) > 0:
             doublet_vertices = list(doublet_vertices) + list(out[0])
             pairs_edges_vertices = list(pairs_edges_vertices) + list(out[1])
@@ -850,6 +1060,7 @@ class MeshPool(nn.Module):
         self.remove_edge(mesh, edge_id, edges_group, mask)
         self.remove_edge(mesh, edge_to_remove, edges_group, mask)
 
+        # fix sides
         edges_list = [edge_to_reconnect] + list(new_hood)
         for edge in edges_list:
             new_sides = [-1, -1, -1, -1, -1, -1]
@@ -863,6 +1074,45 @@ class MeshPool(nn.Module):
             mesh.sides[edge] = new_sides
 
         return updated_fe
+
+    def edge_rotations(self, edge_id, u, e_u, v_e_u, v, e_v, v_e_v, mesh, fe, mask, edge_groups):
+        # 1. Find diagonal vertices
+        diag_vertices, diag_vertex_to_edges_dict = \
+            self.find_diag_vertices(mesh, u, e_u, v_e_u)
+        # diag_vertices_v, diag_vertex_to_edges_dict_v = \
+        #     self.find_diag_vertices(mesh, v, e_v, v_e_v)
+
+        # 2. Rotate edges - for each edge goes from u - change the original
+        # connection to the optional diagonal connection (direction should be
+        # consistent for all the rotated edges)
+        mesh, new_features_combination_dict = \
+            self.rotate_edges_and_connections(mesh, u, e_u, diag_vertices,
+                                              diag_vertex_to_edges_dict)
+
+        return mesh, new_features_combination_dict, diag_vertices
+
+    def edge_collapse(self, edge_id, mesh, fe, mask, edge_groups):
+        # 1. Get edge info
+        u, v_e_u, e_u, v, v_e_v, e_v = self.get_edge_hood_info(mesh, edge_id)
+
+        # check if u and v edges are with boundaries
+        correct_config, u, v_e_u, e_u, v, v_e_v, e_v = \
+            self.check_u_v_boundaries(mesh, u, v_e_u, e_u, v, v_e_v, e_v)
+
+        if not correct_config:
+            return fe
+
+        # 2. Edges rotations around vertex u
+        mesh, new_features_combination_dict, diag_vertices = \
+            self.edge_rotations(edge_id, u, e_u, v_e_u, v, e_v, v_e_v, mesh,
+                                fe, mask, edge_groups)
+
+        # 3. collapse another 2 edges connected to the other vertex v and
+        # reconnect other edges from v connection to u connection
+        e_v = mesh.ve[v].copy()  # edges connected to vertex v
+        self.collapse_other_vertex_v(mesh, u, v, e_v, diag_vertices,
+                                     new_features_combination_dict,
+                                     edge_groups, mask)
 
     def mesh_decimation(self, mesh, fe, edge_id, mask, edge_groups):
 
@@ -882,14 +1132,14 @@ class MeshPool(nn.Module):
         if len(e_u) == 3 and len(e_v) == 3:
             return fe
 
-        if len(e_u) == 3:
-            update_fe = self.diagonal_collapse(mesh, edge_groups, mask, fe, u, edge_id)
+        if len(e_u) == 3 or len(e_v) == 3:
+            if len(e_u) == 3:
+                update_fe = self.diagonal_collapse(mesh, edge_groups,
+                                                   mask, fe, u, edge_id)
+            else:
+                update_fe = self.diagonal_collapse(mesh, edge_groups,
+                                                   mask, fe, v, edge_id)
             return update_fe
-        elif len(e_v) == 3:
-            update_fe = self.diagonal_collapse(mesh, edge_groups, mask, fe, v, edge_id)
-            return update_fe
-
-
 
         # check if u and v edges are with boundaries
         correct_config, u, v_e_u, e_u, v, v_e_v, e_v = \
@@ -931,7 +1181,7 @@ class MeshPool(nn.Module):
 
         # 3. Clear all doublets in the mesh
         doublet_vertices, pairs_edges_vertices, doublet_pairs_edges, replaced_doublets_edges2 = \
-            self.clear_doublets2(outer_vertices, mesh, mask, edge_groups)
+            self.clear_doublets2(mesh, mask, edge_groups, outer_vertices)
 
         # return and restore old connections if we completely removed
         # edge_id vertices
