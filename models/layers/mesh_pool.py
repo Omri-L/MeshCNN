@@ -80,8 +80,7 @@ class MeshPool(nn.Module):
             if mask[edge_id]:
                 _, fe = self.__pool_edge(mesh, edge_id, fe, mask, edge_groups)
         mesh.clean(mask, edge_groups)
-        fe = edge_groups.rebuild_features(self.__fe[mesh_index], fe, mask,
-                                          self.__out_target)  # TODO use features build here?
+        fe = edge_groups.rebuild_features(self.__fe[mesh_index], mask, self.__out_target)
         self.__updated_fe[mesh_index] = fe
         print('finish pooling')
 
@@ -708,6 +707,11 @@ class MeshPool(nn.Module):
                 doubelt_to_replaced_edge[pair[0]] = replaced_edges[1]
                 doubelt_to_replaced_edge[pair[1]] = replaced_edges[0]
 
+            # union groups for features
+            for key in doubelt_to_replaced_edge.keys():
+                MeshPool.__union_groups(mesh, edge_groups, key,
+                                        doubelt_to_replaced_edge[key])
+
             # fix other edges hood
             for edge in other_edges_to_fix:
                 new_hood = mesh.gemm_edges[edge]
@@ -726,6 +730,11 @@ class MeshPool(nn.Module):
             else:
                 doubelt_to_replaced_edge_other_side[pair[0]] = other_edges_to_fix[1]
                 doubelt_to_replaced_edge_other_side[pair[1]] = other_edges_to_fix[0]
+
+            # union groups for features
+            for key in doubelt_to_replaced_edge_other_side.keys():
+                MeshPool.__union_groups(mesh, edge_groups, key,
+                                        doubelt_to_replaced_edge_other_side[key])
 
             for edge in replaced_edges:
                 new_hood = mesh.gemm_edges[edge]
@@ -1125,6 +1134,9 @@ class MeshPool(nn.Module):
         self.collapse_other_vertex_v(mesh, u, v, e_v, diag_vertices,
                                      new_features_combination_dict,
                                      edge_groups, mask)
+
+        # 4. union edge groups
+        MeshPool.__union_groups_at_once(mesh, edge_groups, new_features_combination_dict)
 
     def mesh_decimation(self, mesh, fe, edge_id, mask, edge_groups):
 
@@ -1551,6 +1563,14 @@ class MeshPool(nn.Module):
     def __union_groups(mesh, edge_groups, source, target):
         edge_groups.union(source, target)
         mesh.union_groups(source, target)
+
+    @staticmethod
+    def __union_groups_at_once(mesh, edge_groups, targets_to_sources_dict):
+        edge_groups.union_groups(targets_to_sources_dict)
+        for target in targets_to_sources_dict.keys():
+            for source in targets_to_sources_dict[target]:
+                if target is not source:
+                    mesh.union_groups(source, target)
 
     @staticmethod
     def __remove_group(mesh, edge_groups, index):

@@ -1,15 +1,23 @@
 import torch
 from torch.nn import ConstantPad2d
-
+from copy import deepcopy
 
 class MeshUnion:
     def __init__(self, n, device=torch.device('cpu')):
         self.__size = n
-        self.rebuild_features = self.rebuild_features_average2
+        self.rebuild_features = self.rebuild_features_average
         self.groups = torch.eye(n, device=device)
 
     def union(self, source, target):
         self.groups[target, :] += self.groups[source, :]
+
+    def union_groups(self, target_to_sources_dict):
+        groups_copy = deepcopy(self.groups)
+        for target in target_to_sources_dict.keys():
+            sources = target_to_sources_dict[target]
+            for source in sources:
+                if source is not target:
+                    self.groups[target, :] += groups_copy[source, :]
 
     def remove_group(self, index):
         return
