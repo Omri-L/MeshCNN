@@ -52,26 +52,12 @@ class MeshPool(nn.Module):
         last_count = mesh.edges_count + 1
         mask = np.ones(mesh.edges_count, dtype=np.bool)
         edge_groups = MeshUnion(mesh.edges_count, self.__fe.device)
-        fe = self.__fe[mesh_index, :, :mesh.edges_count].clone()
 
-        ids = None
-        # if self.__out_target == 300:
-        #     ids = [172, 25, 28, 252, 203, 469, 171, 22, 113, 111, 283, 199, 201, 141, 139, 204, 143, 234, 170, 202, 250, 19, 467, 114, 471, 218, 214, 16, 206, 249, 20, 140, 168, 265, 138, 87, 475, 282, 208, 116, 86, 216, 313, 473, 137, 251, 219, 174, 105, 311, 385, 232, 247, 115, 354, 142, 85, 133, 479, 280, 217, 248, 21, 173, 285, 175, 215, 292, 220, 84, 31, 212, 177, 221, 23, 55, 477, 58, 101, 468, 465, 98, 24, 478, 323, 230, 181, 65, 254, 110, 416, 296, 70, 103, 18, 126, 281, 182, 27, 112, 123, 277, 183, 312, 243, 145, 179, 245, 316, 276, 33, 349, 466, 447, 470, 263, 398, 246, 17, 169, 166, 261, 365, 144, 118, 307, 180, 233, 382, 95, 213, 315, 284, 89, 278, 433, 108, 68, 29, 178, 210, 463, 310, 241, 205, 131, 83, 94, 26, 30, 136, 57, 267, 318, 223, 317, 236, 188, 431, 332, 43, 314, 157, 464, 274, 346, 3, 155, 88, 351, 279, 434, 309, 134, 366, 184, 96, 348, 450, 125, 244, 363, 117, 120, 13, 436, 135, 327, 34, 396, 100, 429]
-        # elif self.__out_target == 280:
-        #     ids = [96, 18, 79, 24, 114, 125, 16, 283, 289, 293, 161, 299, 111, 295, 285, 287, 73, 11, 99, 291, 86, 91]
-        # elif self.__out_target == 200:
-        #     ids = [357, 377]
-        # elif self.__out_target == 150:
-        #     ids = [276, 278]
-        count = -1
         while mesh.edges_count > self.__out_target:
             if len(queue) == 0:
                 print('building new queue')
                 queue = self.__build_queue(self.__fe[mesh_index, :, :mesh.edges_count], mesh.edges_count)
             value, edge_id = heappop(queue)
-            count += 1
-            if ids is not None:
-                edge_id = ids[count]
             edge_id = int(edge_id)
             print('pool edge_id %d' % edge_id)
             if mask[edge_id]:
