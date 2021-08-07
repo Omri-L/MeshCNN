@@ -324,7 +324,7 @@ class MeshPool(nn.Module):
                     edge_hood_built.append(edge)
 
         # fix sides
-        self.__fix_mesh_sides(mesh, edge_hood_built)
+        mesh.fix_mesh_sides(edge_hood_built)
 
         return mesh, new_features_combination_dict
 
@@ -498,10 +498,10 @@ class MeshPool(nn.Module):
                     new_hood[i] = collapsed_e_to_orig_e_dict[e]
 
         # fix hood order:
-        mesh.__fix_mesh_hood_order(already_built_edges_hood)
+        mesh.fix_mesh_hood_order(already_built_edges_hood)
 
         # fix sides
-        mesh.__fix_mesh_sides(already_built_edges_hood)
+        mesh.fix_mesh_sides(already_built_edges_hood)
 
         # merge vertex v with vertex u
         mesh.merge_vertices(u, v)
@@ -632,10 +632,10 @@ class MeshPool(nn.Module):
 
             # fix hood order:
             edges_list = replaced_edges + other_edges_to_fix
-            mesh.__fix_mesh_hood_order(edges_list)
+            mesh.fix_mesh_hood_order(edges_list)
 
             # fix sides
-            mesh.__fix_mesh_sides(edges_list)
+            mesh.fix_mesh_sides(edges_list)
 
             # remove doublet from mesh:
             for e in pair:
@@ -690,7 +690,7 @@ class MeshPool(nn.Module):
             assert(False)
 
         # fix hood order:
-        mesh.__fix_mesh_hood_order([edge])
+        mesh.fix_mesh_hood_order([edge])
 
         return
 
@@ -818,99 +818,3 @@ class MeshPool(nn.Module):
     def __remove_group(mesh, edge_groups, index):
         edge_groups.remove_group(index)
         mesh.remove_group(index)
-
-    @staticmethod
-    def __fix_mesh_sides(mesh, edges):
-        for edge in edges:
-            new_sides = [-1, -1, -1, -1, -1, -1]
-            for i_en, en in enumerate(mesh.gemm_edges[edge]):
-                if en == -1:
-                    continue
-                side = np.where(mesh.gemm_edges[en] == edge)[0]
-                if len(side) > 0:
-                    new_sides[i_en] = side[0]
-
-            mesh.sides[edge] = new_sides
-
-    @staticmethod
-    def __fix_mesh_hood_order(mesh, edges):
-        for edge in edges:
-            hood = mesh.gemm_edges[edge]
-            if mesh.edges[hood[2], 0] not in mesh.edges[hood[3]] and \
-                    mesh.edges[hood[2], 1] not in mesh.edges[hood[3]]:
-                hood[5], hood[3] = hood[3], hood[5]
-
-    # @staticmethod
-    # def get_all_vertices_of_edges_connected_to_vertex(mesh, vertex_u):
-    #     """
-    #     Get all the vertices of edges which are connected to vertex u,
-    #     exclude u itself. Another output is the edges themselves.
-    #     """
-    #     v_e_u = []
-    #     e_u = mesh.ve[vertex_u].copy()  # edges connected to vertex u
-    #
-    #     for e in e_u:
-    #         v1, v2 = mesh.edges[e]
-    #         if v1 == vertex_u:
-    #             v_e_u.append(v2)
-    #         else:
-    #             v_e_u.append(v1)
-    #
-    #     return v_e_u, e_u
-
-    # def get_edge_hood_info(self, mesh, edge_id):
-    #     # get vertices of edge with edge_id
-    #     u, v = mesh.edges[edge_id]
-    #
-    #     # get all edges connected to vertex u and all the vertices of them
-    #     v_e_u, e_u = self.get_all_vertices_of_edges_connected_to_vertex(mesh,
-    #                                                                     u)
-    #     # get all edges connected to vertex v and all the vertices of them
-    #     v_e_v, e_v = self.get_all_vertices_of_edges_connected_to_vertex(mesh,
-    #                                                                     v)
-    #     if len(e_u) > len(e_v):
-    #         # swap u and v
-    #         u, v = v, u
-    #         v_e_u, v_e_v = v_e_v, v_e_u
-    #         e_u, e_v = e_v, e_u
-    #
-    #     return u, v_e_u, e_u, v, v_e_v, e_v
-    # @staticmethod
-    # def get_edge_from_two_vertices(mesh, v1, v2):
-    #     e1 = mesh.ve[v1]
-    #     e2 = mesh.ve[v2]
-    #     edge = None
-    #     for e in e1:
-    #         if e in e2:
-    #             edge = e
-    #             break
-    #     return edge
-
-    # def find_double_faces(self, mesh, face, faces, face_vertices, faces_vertices):
-    #     all_vn = []
-    #     removed_faces = []
-    #     removed_faces_vertices = []
-    #     for v in face_vertices:
-    #         vn, _ = self.get_all_vertices_of_edges_connected_to_vertex(mesh, v)
-    #         all_vn = all_vn + vn
-    #
-    #     outer_vertices = set(all_vn) - set(face_vertices)
-    #     if len(outer_vertices) == 4:
-    #         faces_copy = faces.copy()
-    #         faces_vertices_copy = faces_vertices.copy()
-    #         for fi, f in enumerate(faces_copy):
-    #             if f == face:
-    #                 continue
-    #             else:
-    #                 is_outer_face = len(outer_vertices.difference(set(faces_vertices_copy[fi]))) == 0
-    #                 if is_outer_face:
-    #                     removed_faces.append(f)
-    #                     removed_faces_vertices.append(faces_vertices_copy[fi])
-    #                     faces.remove(f)
-    #                     faces_vertices.remove(faces_vertices_copy[fi])
-    #                     # print(f)
-    #                     # print('double face was found!')
-    #
-    #     return removed_faces, removed_faces_vertices
-
-

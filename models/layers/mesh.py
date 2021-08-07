@@ -204,7 +204,40 @@ class Mesh:
     def get_edge_areas(self):
         return self.edge_areas
 
+    def fix_mesh_sides(self, edges):
+        for edge in edges:
+            new_sides = [-1, -1, -1, -1, -1, -1]
+            for i_en, en in enumerate(self.gemm_edges[edge]):
+                if en == -1:
+                    continue
+                side = np.where(self.gemm_edges[en] == edge)[0]
+                if len(side) > 0:
+                    new_sides[i_en] = side[0]
+
+            self.sides[edge] = new_sides
+
+    def fix_mesh_hood_order(self, edges):
+        for edge in edges:
+            hood = self.gemm_edges[edge]
+            if self.edges[hood[2], 0] not in self.edges[hood[3]] and \
+                    self.edges[hood[2], 1] not in self.edges[hood[3]]:
+                hood[5], hood[3] = hood[3], hood[5]
+
     def get_edge_hood_info(self, edge_id):
+        """
+        Get all edge neighborhood information.
+        Args:
+            edge_id (int): edge identification number to extract information.
+        Returns:
+            u (int): one edge vertex.
+            v_e_u (list of ints): list of all vertices of all the edges
+                                  connected to vertex u.
+            e_u (list of ints): list of all edge ids connected to vertex u.
+            v (int): second edge vertex.
+            v_e_v (list of ints): list of all vertices of all the edges
+                                  connected to vertex v.
+            e_v (list of ints): list of all edge ids connected to vertex v.
+        """
         # get vertices of edge with edge_id
         u, v = self.edges[edge_id]
 
