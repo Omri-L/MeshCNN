@@ -55,17 +55,18 @@ class MeshPool(nn.Module):
         fe = self.__fe[mesh_index, :, :mesh.edges_count].clone()
 
         ids = None
-        # if self.__out_target == 430:
-        #     ids = [261, 199]
-        # elif self.__out_target == 380:
-        #     ids = [403, 405]
-        # elif self.__out_target == 300:
+        # if self.__out_target == 300:
+        #     ids = [172, 25, 28, 252, 203, 469, 171, 22, 113, 111, 283, 199, 201, 141, 139, 204, 143, 234, 170, 202, 250, 19, 467, 114, 471, 218, 214, 16, 206, 249, 20, 140, 168, 265, 138, 87, 475, 282, 208, 116, 86, 216, 313, 473, 137, 251, 219, 174, 105, 311, 385, 232, 247, 115, 354, 142, 85, 133, 479, 280, 217, 248, 21, 173, 285, 175, 215, 292, 220, 84, 31, 212, 177, 221, 23, 55, 477, 58, 101, 468, 465, 98, 24, 478, 323, 230, 181, 65, 254, 110, 416, 296, 70, 103, 18, 126, 281, 182, 27, 112, 123, 277, 183, 312, 243, 145, 179, 245, 316, 276, 33, 349, 466, 447, 470, 263, 398, 246, 17, 169, 166, 261, 365, 144, 118, 307, 180, 233, 382, 95, 213, 315, 284, 89, 278, 433, 108, 68, 29, 178, 210, 463, 310, 241, 205, 131, 83, 94, 26, 30, 136, 57, 267, 318, 223, 317, 236, 188, 431, 332, 43, 314, 157, 464, 274, 346, 3, 155, 88, 351, 279, 434, 309, 134, 366, 184, 96, 348, 450, 125, 244, 363, 117, 120, 13, 436, 135, 327, 34, 396, 100, 429]
+        # elif self.__out_target == 280:
+        #     ids = [96, 18, 79, 24, 114, 125, 16, 283, 289, 293, 161, 299, 111, 295, 285, 287, 73, 11, 99, 291, 86, 91]
+        # elif self.__out_target == 200:
         #     ids = [357, 377]
-        # elif self.__out_target == 250:
+        # elif self.__out_target == 150:
         #     ids = [276, 278]
         count = -1
         while mesh.edges_count > self.__out_target:
             if len(queue) == 0:
+                print('building new queue')
                 queue = self.__build_queue(self.__fe[mesh_index, :, :mesh.edges_count], mesh.edges_count)
             value, edge_id = heappop(queue)
             count += 1
@@ -100,14 +101,12 @@ class MeshPool(nn.Module):
         if self.has_boundaries(mesh, edge_id):
             return False
 
-        # TODO check if we really need this if
-        if self.__clean_side(mesh, edge_id, mask, edge_groups, 0) \
-                and self.__clean_side(mesh, edge_id, mask, edge_groups, 3) \
+        if self.__clean_side(mesh, edge_id, 0) \
+                and self.__clean_side(mesh, edge_id, 3) \
                 and self.__is_one_ring_valid(mesh, edge_id):
 
-            self.edge_collapse(edge_id, mesh, mask, edge_groups)
-            # mesh.merge_vertices(edge_id)  # TODO should update this method
-            return True
+            status = self.edge_collapse(edge_id, mesh, mask, edge_groups)
+            return status
         else:
             return False
 
@@ -120,7 +119,7 @@ class MeshPool(nn.Module):
             self.check_u_v_boundaries(mesh, u, v_e_u, e_u, v, v_e_v, e_v)
 
         if not correct_config:
-            return
+            return False
 
         # 2. Edges rotations around vertex u
         mesh, new_features_combination_dict, diag_vertices = \
@@ -135,6 +134,8 @@ class MeshPool(nn.Module):
 
         # 4. union edge groups
         MeshPool.__union_groups_at_once(mesh, edge_groups, new_features_combination_dict)
+        return True
+
 
     def check_u_v_boundaries(self, mesh, u, v_e_u, e_u, v, v_e_v, e_v):
         correct_config = True
@@ -423,6 +424,9 @@ class MeshPool(nn.Module):
 
         # fix sides
         self.__fix_mesh_sides(mesh, already_built_edges_hood)
+
+        # merge vertex v with vertex u
+        mesh.merge_vertices(u, v)
         return
 
     @staticmethod
@@ -578,20 +582,23 @@ class MeshPool(nn.Module):
 
         return
 
-    def __clean_side(self, mesh, edge_id, mask, edge_groups, side):
+    def __clean_side(self, mesh, edge_id, side):
         if mesh.edges_count <= self.__out_target:
             return False
-        invalid_edges = MeshPool.__get_invalids(mesh, edge_id, edge_groups,
-                                                side)
-        while len(invalid_edges) != 0 and mesh.edges_count > self.__out_target:
-            self.__remove_triplete(mesh, mask, edge_groups, invalid_edges)
-            if mesh.edges_count <= self.__out_target:
-                return False
-            if self.has_boundaries(mesh, edge_id):
-                return False
-            invalid_edges = self.__get_invalids(mesh, edge_id, edge_groups,
-                                                side)
-        return True
+
+        info = MeshPool.__get_face_info(mesh, edge_id, side)
+        key_a, key_b, key_c, side_a, side_b, side_c, \
+        other_side_a, other_side_b, other_side_c, \
+        other_keys_a, other_keys_b, other_keys_c = info
+        shared_items_ab = MeshPool.__get_shared_items(other_keys_a, other_keys_b)
+        shared_items_ac = MeshPool.__get_shared_items(other_keys_a, other_keys_c)
+        shared_items_bc = MeshPool.__get_shared_items(other_keys_b, other_keys_c)
+        if len(shared_items_ab) <= 2 and len(shared_items_ac) <= 2 and \
+                len(shared_items_bc) <= 2:
+            return True
+        else:
+            assert(False)   # TODO: remove this - just to make sure we don't get here
+            return False
 
     @staticmethod
     def has_boundaries(mesh, edge_id):
@@ -612,7 +619,6 @@ class MeshPool(nn.Module):
                set(mesh.edges[mesh.ve[mesh.edges[edge_id, 1]]].reshape(-1)),
 
     def __is_one_ring_valid(self, mesh, edge_id):
-        # v_a, v_b = get_v_n(mesh, edge_id)
         e_a = mesh.ve[mesh.edges[edge_id, 0]]
         e_b = mesh.ve[mesh.edges[edge_id, 1]]
 
@@ -631,76 +637,6 @@ class MeshPool(nn.Module):
         shared = v_a & v_b - set(mesh.edges[edge_id])
         return len(shared) == 4
 
-    def __pool_side(self, mesh, edge_id, mask, edge_groups, side):
-        info = MeshPool.__get_face_info(mesh, edge_id, side)
-        key_a, key_b, side_a, side_b, _, other_side_b, _, other_keys_b = info
-        self.__redirect_edges(mesh, key_a, side_a - side_a % 2,
-                              other_keys_b[0], mesh.sides[key_b, other_side_b])
-        self.__redirect_edges(mesh, key_a, side_a - side_a % 2 + 1,
-                              other_keys_b[1],
-                              mesh.sides[key_b, other_side_b + 1])
-        MeshPool.__union_groups(mesh, edge_groups, key_b, key_a)
-        MeshPool.__union_groups(mesh, edge_groups, edge_id, key_a)
-        mask[key_b] = False
-        MeshPool.__remove_group(mesh, edge_groups, key_b)
-        mesh.remove_edge(key_b)
-        mesh.edges_count -= 1
-        return key_a
-
-    @staticmethod
-    def __get_invalids(mesh, edge_id, edge_groups, side):
-        info = MeshPool.__get_face_info(mesh, edge_id, side)
-        key_a, key_b, key_c, side_a, side_b, side_c, \
-        other_side_a, other_side_b, other_side_c, \
-        other_keys_a, other_keys_b, other_keys_c = info
-        shared_items_ab = MeshPool.__get_shared_items(other_keys_a, other_keys_b)
-        shared_items_ac = MeshPool.__get_shared_items(other_keys_a, other_keys_c)
-        shared_items_bc = MeshPool.__get_shared_items(other_keys_b, other_keys_c)
-        if len(shared_items_ab) <= 2 and len(shared_items_ac) <= 2 and \
-                len(shared_items_bc) <= 2:
-            return []
-        else:
-            if len(shared_items_ab) > 2:
-                shared_items = shared_items_ab
-            elif len(shared_items_ac) > 2:
-                shared_items = shared_items_ac
-            else:
-                shared_items = shared_items_bc
-
-            assert (len(shared_items) == 4)
-            # TODO - shold change all of the following:
-            middle_edge = other_keys_a[shared_items[0]]
-            update_key_a = other_keys_a[1 - shared_items[0]]
-            update_key_b = other_keys_b[1 - shared_items[1]]
-            update_side_a = mesh.sides[
-                key_a, other_side_a + 1 - shared_items[0]]
-            update_side_b = mesh.sides[
-                key_b, other_side_b + 1 - shared_items[1]]
-            MeshPool.__redirect_edges(mesh, edge_id, side, update_key_a,
-                                      update_side_a)
-            MeshPool.__redirect_edges(mesh, edge_id, side + 1, update_key_b,
-                                      update_side_b)
-            MeshPool.__redirect_edges(mesh, update_key_a,
-                                      MeshPool.__get_other_side(update_side_a),
-                                      update_key_b,
-                                      MeshPool.__get_other_side(update_side_b))
-            MeshPool.__union_groups(mesh, edge_groups, key_a, edge_id)
-            MeshPool.__union_groups(mesh, edge_groups, key_b, edge_id)
-            MeshPool.__union_groups(mesh, edge_groups, key_a, update_key_a)
-            MeshPool.__union_groups(mesh, edge_groups, middle_edge,
-                                    update_key_a)
-            MeshPool.__union_groups(mesh, edge_groups, key_b, update_key_b)
-            MeshPool.__union_groups(mesh, edge_groups, middle_edge,
-                                    update_key_b)
-            return [key_a, key_b, middle_edge]
-
-    @staticmethod
-    def __redirect_edges(mesh, edge_a_key, side_a, edge_b_key, side_b):
-        mesh.gemm_edges[edge_a_key, side_a] = edge_b_key
-        mesh.gemm_edges[edge_b_key, side_b] = edge_a_key
-        mesh.sides[edge_a_key, side_a] = side_b
-        mesh.sides[edge_b_key, side_b] = side_a
-
     @staticmethod
     def __get_shared_items(list_a, list_b):
         shared_items = []
@@ -709,10 +645,6 @@ class MeshPool(nn.Module):
                 if list_a[i] == list_b[j]:
                     shared_items.extend([i, j])
         return shared_items
-
-    @staticmethod
-    def __get_other_side(side):
-        return side + 1 - 2 * (side % 2)
 
     @staticmethod
     def __get_face_info(mesh, edge_id, side):
@@ -737,18 +669,6 @@ class MeshPool(nn.Module):
         return key_a, key_b, key_c, side_a, side_b, side_c, \
                other_side_a, other_side_b, other_side_c, \
                other_keys_a, other_keys_b, other_keys_c
-
-    @staticmethod
-    def __remove_triplete(mesh, mask, edge_groups, invalid_edges):
-        vertex = set(mesh.edges[invalid_edges[0]])
-        for edge_key in invalid_edges:
-            vertex &= set(mesh.edges[edge_key])
-            mask[edge_key] = False
-            MeshPool.__remove_group(mesh, edge_groups, edge_key)
-        mesh.edges_count -= 3
-        vertex = list(vertex)
-        assert (len(vertex) == 1)
-        mesh.remove_vertex(vertex[0])
 
     @staticmethod
     def __build_queue(features, edges_count):
