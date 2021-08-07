@@ -154,7 +154,7 @@ class MeshPool(nn.Module):
     def edge_rotations(self, edge_id, u, e_u, v_e_u, mesh):
         # 1. Find diagonal vertices
         diag_vertices, diag_vertex_to_edges_dict = \
-            self.find_diag_vertices(mesh, edge_id, u, e_u, v_e_u)
+            self.find_diag_vertices(mesh, u, e_u, v_e_u)
 
         # 2. Rotate edges - for each edge goes from u - change the original
         # connection to the optional diagonal connection (direction should be
@@ -165,7 +165,7 @@ class MeshPool(nn.Module):
 
         return mesh, new_features_combination_dict, diag_vertices
 
-    def find_diag_vertices(self, mesh, edge_id, u, e_u, v_e_u):
+    def find_diag_vertices(self, mesh, u, e_u, v_e_u):
 
         # find outer edges
         all_edges = list(
@@ -365,12 +365,8 @@ class MeshPool(nn.Module):
                         collapsed_e_to_orig_e_dict[e] = key
                         break
                 # collapse
-                MeshPool.__remove_group(mesh, edge_groups, e)  # TODO needed?
-                mask[e] = False
-                mesh.remove_edge(e)
-                mesh.edges[e] = [-1, -1]  # TODO needed?
-                mesh.gemm_edges[e] = [-1, -1, -1, -1, -1, -1]  # TODO needed?
-                mesh.edges_count -= 1
+                self.remove_edge(mesh, e, edge_groups, mask)
+
             else:
                 e_to_reconnect_with_u.append(e)
                 mesh.ve[v].remove(e)
@@ -539,13 +535,7 @@ class MeshPool(nn.Module):
 
             # remove doublet from mesh:
             for e in pair:
-                u, v = mesh.edges[e]
-                MeshPool.__remove_group(mesh, edge_groups, e)  # TODO needed?
-                mask[e] = False
-                mesh.remove_edge(e)
-                mesh.edges[e] = [-1, -1]  # TODO needed?
-                mesh.edges_count -= 1
-                mesh.gemm_edges[e] = [-1, -1, -1, -1, -1, -1]
+                self.remove_edge(mesh, e, edge_groups, mask)
 
         return True
 
