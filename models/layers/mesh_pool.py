@@ -82,48 +82,91 @@ class MeshPool(nn.Module):
         print('finish pooling')
 
     def clean_mesh_operations(self, mesh, mask, edge_groups):
-
+        """
+        This function implements the mesh cleaning process. In-order to keep
+        mesh with valid connectivity and without edge neighborhoods ambiguities
+        we keep mesh clear from "doublet" and "singlet" (TBD) edges.
+        """
         # clear doublets and build new hood
         doublet_cleared = self.clear_doublets(mesh, mask, edge_groups)
         while doublet_cleared:
             doublet_cleared = self.clear_doublets(mesh, mask, edge_groups)
 
+        # TBD
         # clear singlets and build new hood
         # self.clear_singlets(mesh, mask, edge_groups)
         return
 
     def __pool_edge(self, mesh, edge_id, mask, edge_groups):
+        """
+        This function implements edge pooling algorithm:
+        1. Clean mesh configuration from doublet edges and singlet edges.
+        2. For a non-boundary edge check if:
+            2.1. First edge side is "clean".
+            2.2. Second edge side is "clean".
+            2.3. edge one-ring neighborhood is.
+        3. Run edge collapse algorithm.
+        Args:
+            mesh (Mesh): mesh structure input (will be updated during the
+                         process).
+            edge_id (int): edge identification number in the mesh.
+            mask: (ndarray): array of boolean values which indicates if an edge
+                             aleady been removed.
+            edge_groups (MeshUnion): mesh union structure of edge groups in-
+                                     order to keep track of edge features
+                                     combinations.
 
-        # 1. clean mesh operations
+        Returns:
+            status (bool) - True if pool_edge algorithm succeeded,
+                            False otherwise.
+
+        """
+        # 1. Clean mesh operations
         self.clean_mesh_operations(mesh, mask, edge_groups)
 
-        # 2. check if edge_id have boundaries
+        # Check if edge_id have boundaries
         if self.has_boundaries(mesh, edge_id):
             return False
 
+        # 2. Check edge configuration validity
         if self.__clean_side(mesh, edge_id, 0) \
                 and self.__clean_side(mesh, edge_id, 3) \
                 and self.__is_one_ring_valid(mesh, edge_id):
 
+            # 3. Edge collapse algorithm
             status = self.edge_collapse(edge_id, mesh, mask, edge_groups)
             return status
         else:
             return False
 
     def edge_collapse(self, edge_id, mesh, mask, edge_groups):
+        """
+        This function implements edge collapse algorithm inspired by the paper:
+        "Practical quad mesh simplification" Tarini et al.
+        The algorithm goes as follows:
+        1. Extract edge mesh information (for each vertex extract edge
+           connections and their vertices).
+        2. Check if the edges connected to u and v have boundaries.
+        3. Rotate the edges connected to u and re-build their neighborhood.
+        4. Perform diagonal collapse from v to u - collapse the two edges from
+           the original edge_id neighborhood which are connected to v and
+           reconnect all the other edges connected to v with u. Re-build all
+           edges neighborhood.
+        5. Union edges groups according to new feature edges combinations.
+        """
         # 1. Get edge info
         u, v_e_u, e_u, v, v_e_v, e_v = mesh.get_edge_hood_info(edge_id)
 
-        # check if u and v edges are with boundaries
+        # 2. Check if u and v edges are with boundaries
         correct_config, u, v_e_u, e_u, v, v_e_v, e_v = \
             self.check_u_v_boundaries(mesh, u, v_e_u, e_u, v, v_e_v, e_v)
 
         if not correct_config:
             return False
 
-        # 2. Edges rotations around vertex u
+        # 3. Edges rotations around vertex u
         mesh, new_features_combination_dict, diag_vertices = \
-            self.edge_rotations(edge_id, u, e_u, v_e_u, mesh)
+            self.edge_rotations(u, e_u, v_e_u, mesh)
 
         # 3. collapse another 2 edges connected to the other vertex v and
         # reconnect other edges from v connection to u connection
@@ -136,8 +179,13 @@ class MeshPool(nn.Module):
         MeshPool.__union_groups_at_once(mesh, edge_groups, new_features_combination_dict)
         return True
 
-
     def check_u_v_boundaries(self, mesh, u, v_e_u, e_u, v, v_e_v, e_v):
+        """
+        This function checks that if any edge which comes from vertex  u has
+        boundary. If yes - it switches the "roles" of u and v, and check
+        boundaries again with the "new u" vertex (originally v). If there is,
+        it calls this configuration invalid and returns False.
+        """
         correct_config = True
         # check if any edge comes from vertex u has boundary
         switch_u_v = np.any([self.has_boundaries_edge_only(mesh, e) for e in e_u])
@@ -152,7 +200,15 @@ class MeshPool(nn.Module):
 
         return correct_config, u, v_e_u, e_u, v, v_e_v, e_v
 
-    def edge_rotations(self, edge_id, u, e_u, v_e_u, mesh):
+    def edge_rotations(self, u, e_u, v_e_u, mesh):
+        """
+        This function implements the edge rotation algorithm.:
+        1. Find all diagonal connections from vertex u to all vertices called
+        "diagonal vertices". In addition, find the optional edges to connect
+        with a vertex in the diagonal vertices.
+        2. Rotate the edges according to the optional new connections (all
+        edges rotate to the same direction). Re-build the edges neighborhoods.
+        """
         # 1. Find diagonal vertices
         diag_vertices, diag_vertex_to_edges_dict = \
             self.find_diag_vertices(mesh, u, e_u, v_e_u)
@@ -167,7 +223,10 @@ class MeshPool(nn.Module):
         return mesh, new_features_combination_dict, diag_vertices
 
     def find_diag_vertices(self, mesh, u, e_u, v_e_u):
-
+        """
+        Find diagonl connections for all e_u edges from u to another vertex via
+        another edge. The "other edge" must be in outer_edges list.
+        """
         # find outer edges
         all_edges = list(
             set(np.array([mesh.gemm_edges[e] for e in e_u]).flatten()))
@@ -184,7 +243,8 @@ class MeshPool(nn.Module):
                 if j in checked_vertex:
                     continue  # do not check vertex twice
 
-                # find mutual vertices via another outer edge start from v_i and v_j
+                # find mutual vertices via another outer edge start from v_i
+                # and v_j
                 connection_vertices = \
                     self.get_vertices_connections_via_another_edge(mesh, v_i,
                                                                    v_j, outer_edges)
@@ -201,7 +261,7 @@ class MeshPool(nn.Module):
                                      optional_vertices,
                                      optional_vertex_to_edges_dict):
         """
-        For each edge goes from original vertex: change the original connection
+        For each edge goes from origin vertex: change the original connection
         to another optional vertex connection in a way that all vertices have
         a new connection (it will make sure the rotation for all will be CCW or
         CW).
@@ -257,8 +317,10 @@ class MeshPool(nn.Module):
                 if edge in edge_hood_built:
                     continue
                 else:
-                    self.build_new_hood_for_diag_collapse(mesh, edge, edges_to_change,
-                                                      new_faces)
+                    self.rebuild_hood_for_edges_according_to_new_faces(mesh,
+                                                                       edge,
+                                                                       edges_to_change,
+                                                                       new_faces)
                     edge_hood_built.append(edge)
 
         # fix sides
@@ -268,7 +330,12 @@ class MeshPool(nn.Module):
 
     @staticmethod
     def edge_rotation_new_hood(mesh, old_mesh, e, new_vertex):
+        """
+        This function fixes the old edge neighborhood according to the new
+        connection. This function is used after edge rotations.
+        Returns: new edge neighborhood.
 
+        """
         old_hood = old_mesh.gemm_edges[e]
         # find the two edges in e hood which connected to the new_vertex
         new_vertex_old_optional_edges_pairs = [[0, 1], [1, 2], [3, 4], [4, 5]]
@@ -341,6 +408,17 @@ class MeshPool(nn.Module):
     def collapse_other_vertex_v(self, mesh, u, v, e_v, diag_vertices,
                                 new_features_combination_dict, edge_groups,
                                 mask):
+        """
+        This function implements the diagonal collapse from vertex v to vertex
+        u according to the following steps:
+        1. Check if vertex v is a doublet edges configuration.
+           If it is - clear the doublet and return (no other collapse is
+           needed).
+        2. Collapse (and finally remove) the 2 edges connected to v in the
+           original neighborhood of edge_id.
+        3. Re-connect all the other edges connected to v with u
+        4. Re-build all relevant edges neighborhoods.
+        """
         if self.clear_doublets(mesh, mask, edge_groups, [v]):
             return
 
@@ -420,10 +498,10 @@ class MeshPool(nn.Module):
                     new_hood[i] = collapsed_e_to_orig_e_dict[e]
 
         # fix hood order:
-        self.__fix_mesh_hood_order(mesh, already_built_edges_hood)
+        mesh.__fix_mesh_hood_order(already_built_edges_hood)
 
         # fix sides
-        self.__fix_mesh_sides(mesh, already_built_edges_hood)
+        mesh.__fix_mesh_sides(already_built_edges_hood)
 
         # merge vertex v with vertex u
         mesh.merge_vertices(u, v)
@@ -449,6 +527,13 @@ class MeshPool(nn.Module):
         return inter_vertices
 
     def find_doublets(self, mesh, vertices):
+        """
+        Find doublet edges in the mesh structure.
+        If vertices list is not None - check only this list, otherwise - all
+        vertices in the mesh.
+        Definition: If a vertex v has only two non-boundary edges connected to
+        it, these two edges called "doublet edges".
+        """
         doublet_pair_edges = []
         if vertices is None:
             doublet_vertices = np.where(np.array([len(mesh.ve[j]) for j in range(len(mesh.ve))]) == 2)[0]
@@ -471,6 +556,21 @@ class MeshPool(nn.Module):
         return doublet_vertices, doublet_pair_edges
 
     def clear_doublets(self, mesh, mask, edge_groups, vertices=None):
+        """
+        This function finds doublet configuration and removes it from the mesh.
+        Args:
+            mesh (Mesh): mesh structure
+            mask (ndarray): array of boolean which indicates which edge removed
+            edge_groups (MeshUnion): mesh union strcture contain all edges
+                                     groups of edge features combinations.
+            vertices (list, optional): if not None, check only this list of
+                                       vertices in the mesh.
+                                       Otherwise - check all mesh.
+
+        Returns:
+            boolean - True if doublet found and removed.
+                      False - otherwise.
+        """
         doublet_vertices, doublet_pairs_edges = self.find_doublets(mesh, vertices)
         if len(doublet_vertices) == 0:
             return False
@@ -532,10 +632,10 @@ class MeshPool(nn.Module):
 
             # fix hood order:
             edges_list = replaced_edges + other_edges_to_fix
-            self.__fix_mesh_hood_order(mesh, edges_list)
+            mesh.__fix_mesh_hood_order(edges_list)
 
             # fix sides
-            self.__fix_mesh_sides(mesh, edges_list)
+            mesh.__fix_mesh_sides(edges_list)
 
             # remove doublet from mesh:
             for e in pair:
@@ -545,6 +645,12 @@ class MeshPool(nn.Module):
 
     @staticmethod
     def remove_edge(mesh, e, edge_groups, mask):
+        """
+        Removes an edge:
+        Remove it from edge groups (MeshUnion structure)
+        Indicate it in the "mask" array
+        Remove it from the mesh structure.
+        """
         MeshPool.__remove_group(mesh, edge_groups, e)
         mask[e] = False
         mesh.remove_edge(e)
@@ -552,7 +658,13 @@ class MeshPool(nn.Module):
         mesh.edges_count -= 1
         mesh.gemm_edges[e] = [-1, -1, -1, -1, -1, -1]
 
-    def build_new_hood_for_diag_collapse(self, mesh, edge, removed_edges, new_faces):
+    def rebuild_hood_for_edges_according_to_new_faces(self, mesh, edge,
+                                                      removed_edges,
+                                                      new_faces):
+        """
+        The function re-builds edge neighborhood of an edge according to
+        correct new faces exsit in the mesh strcutre.
+        """
         old_hood = mesh.gemm_edges[edge]
 
         # find the edge in the new faces to create the new hood
@@ -578,14 +690,17 @@ class MeshPool(nn.Module):
             assert(False)
 
         # fix hood order:
-        self.__fix_mesh_hood_order(mesh, [edge])
+        mesh.__fix_mesh_hood_order([edge])
 
         return
 
     def __clean_side(self, mesh, edge_id, side):
+        """
+        Checks how many shared items have each pair neighborhood edge of
+        edge_id (specific side) in their neighborhood.
+        """
         if mesh.edges_count <= self.__out_target:
             return False
-
         info = MeshPool.__get_face_info(mesh, edge_id, side)
         key_a, key_b, key_c, side_a, side_b, side_c, \
         other_side_a, other_side_b, other_side_c, \
@@ -619,6 +734,10 @@ class MeshPool(nn.Module):
                set(mesh.edges[mesh.ve[mesh.edges[edge_id, 1]]].reshape(-1)),
 
     def __is_one_ring_valid(self, mesh, edge_id):
+        """
+        Checks edge_id one-ring edges neighborhood is valid, i.e. only 4
+        vertices can be shared from each side of the edge_id.
+        """
         e_a = mesh.ve[mesh.edges[edge_id, 0]]
         e_b = mesh.ve[mesh.edges[edge_id, 1]]
 
