@@ -205,3 +205,38 @@ class Mesh:
 
     def get_edge_areas(self):
         return self.edge_areas
+
+    def get_edge_hood_info(self, edge_id):
+        # get vertices of edge with edge_id
+        u, v = self.edges[edge_id]
+
+        # get all edges connected to vertex u and all the vertices of them
+        v_e_u, e_u = self.get_all_vertices_of_edges_connected_to_vertex(u)
+        # get all edges connected to vertex v and all the vertices of them
+        v_e_v, e_v = self.get_all_vertices_of_edges_connected_to_vertex(v)
+        if len(e_u) > len(e_v):
+            # swap u and v
+            u, v = v, u
+            v_e_u, v_e_v = v_e_v, v_e_u
+            e_u, e_v = e_v, e_u
+
+        return u, v_e_u, e_u, v, v_e_v, e_v
+
+    def get_all_vertices_of_edges_connected_to_vertex(self, vertex_u):
+        """
+        Get all the vertices of edges which are connected to vertex u,
+        exclude u itself. Another output is the edges themselves.
+        """
+        v_e_u = []
+        e_u = self.ve[vertex_u].copy()  # edges connected to vertex u
+
+        for e in e_u:
+            v1, v2 = self.edges[e]
+            if v1 == vertex_u:
+                v_e_u.append(v2)
+            else:
+                v_e_u.append(v1)
+
+        return v_e_u, e_u
+
+
