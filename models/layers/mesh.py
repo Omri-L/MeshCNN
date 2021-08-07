@@ -29,18 +29,16 @@ class Mesh:
     def extract_features(self):
         return self.features
 
-    def merge_vertices(self, edge_id):
-        self.remove_edge(edge_id)
-        edge = self.edges[edge_id]
-        v_a = self.vs[edge[0]]
-        v_b = self.vs[edge[1]]
+    def merge_vertices(self, u, v):
+        v_a = self.vs[u]
+        v_b = self.vs[v]
         # update pA
         v_a.__iadd__(v_b)
         v_a.__itruediv__(2)
-        self.v_mask[edge[1]] = False
-        mask = self.edges == edge[1]
-        self.ve[edge[0]].extend(self.ve[edge[1]])
-        self.edges[mask] = edge[0]
+        self.v_mask[v] = False
+        mask = self.edges == v
+        self.ve[u].extend(self.ve[v])
+        self.edges[mask] = u
 
     def remove_vertex(self, v):
         self.v_mask[v] = False
