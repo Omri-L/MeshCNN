@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import ntpath
+from scipy.interpolate import interp2d
 
 
 def fill_mesh(mesh2fill, file: str, opt):
@@ -184,7 +185,7 @@ def augmentation(mesh, opt, faces=None):
     if hasattr(opt, 'scale_verts') and opt.scale_verts:
         scale_verts(mesh)
     if hasattr(opt, 'flip_edges') and opt.flip_edges:
-        faces = flip_edges(mesh, opt.flip_edges, faces)
+        # faces = rotate_edges(mesh, opt.flip_edges, faces)
     return faces
 
 
@@ -214,9 +215,25 @@ def slide_verts(mesh, prct):
     mesh.shifted = shifted / len(mesh.ve)
 
 
-def scale_verts(mesh, mean=1, var=0.1):
-    for i in range(mesh.vs.shape[1]):
-        mesh.vs[:, i] = mesh.vs[:, i] * np.random.normal(mean, var)
+def scale_verts(mesh, p=0.1):
+    num_verts_to_change = int(p * len(mesh.vs))
+    vs_ind_to_change = np.random.choice(len(mesh.vs), num_verts_to_change)
+    eps = 1e-6
+
+    vs = mesh.vs.copy()
+    for dim in range(mesh.vs.shape[1]):
+        min_val = min(vs[:, dim])
+        max_val = max(vs[:, dim])
+        for ind in vs_ind_to_change:
+            # assumes uniform grid with step of 1
+            max_step_before = -1+eps
+            max_step_after = 1-eps
+            new_grid = mesh.vs[ind, dim] + np.random.uniform(max_step_before,
+                                                             max_step_after)
+            new_grid = min(max(new_grid, min_val), max_val)
+            vs[ind, dim] = new_grid
+
+    mesh.vs = vs
 
 
 def angles_from_faces(mesh, edge_faces, faces):
@@ -326,14 +343,22 @@ def extract_features(mesh):
     else:
         return extract_rgb_features(mesh)
 
-
 def extract_rgb_features(mesh):
     features = []
+    n_grid_y, n_grid_x, n_grid_dim = mesh.img_data.shape
+    x = np.linspace(0, n_grid_x-1, n_grid_x)
+    y = np.linspace(0, n_grid_y-1, n_grid_y)
+    f_img_0 = interp2d(x, y, mesh.img_data[:, :, 0])
+    f_img_1 = interp2d(x, y, mesh.img_data[:, :, 1])
+    f_img_2 = interp2d(x, y, mesh.img_data[:, :, 2])
+
     for edge in mesh.edges:
-        v0 = mesh.vs[edge[0]].astype(int)
-        f0 = mesh.img_data[v0[1], v0[0]]
-        v1 = mesh.vs[edge[1]].astype(int)
-        f1 = mesh.img_data[v1[1], v1[0]]
+        v0 = mesh.vs[edge[0]].astype(float)
+        f0 = np.concatenate((f_img_0(v0[0], v0[1]), f_img_1(v0[0], v0[1]),
+                             f_img_2(v0[0], v0[1])))
+        v1 = mesh.vs[edge[1]].astype(float)
+        f1 = np.concatenate((f_img_0(v1[0], v1[1]), f_img_1(v1[0], v1[1]),
+                             f_img_2(v1[0], v1[1])))
         feature = np.concatenate((f0, f1))
         features.append(feature)
     return np.array(features).T
