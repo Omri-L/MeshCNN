@@ -2,6 +2,8 @@ import numpy as np
 import os
 import ntpath
 from scipy.interpolate import interp2d
+import random
+from .mesh_rotation_utils import rotate_edges_around_vertex
 
 
 def fill_mesh(mesh2fill, file: str, opt):
@@ -183,15 +185,26 @@ def compute_face_normals_and_areas(mesh, faces):
 # Data augmentation methods
 def augmentation(mesh, opt, faces=None):
     if hasattr(opt, 'scale_verts') and opt.scale_verts:
-        scale_verts(mesh)
-    if hasattr(opt, 'flip_edges') and opt.flip_edges:
-        # faces = rotate_edges(mesh, opt.flip_edges, faces)
+        scale_verts(mesh, opt.scale_verts)
     return faces
 
 
 def post_augmentation(mesh, opt):
-    if hasattr(opt, 'slide_verts') and opt.slide_verts:
-        slide_verts(mesh, opt.slide_verts)
+    if hasattr(opt, 'rotate_edges') and opt.rotate_edges:
+        num_rotations = int(mesh.edges_count * opt.rotate_edges)
+        random.seed(0)
+        edges = np.random.choice(mesh.edges_count, num_rotations)
+        count = 0
+        for edge in edges:
+            # print('edge {}'.format(edge))
+            v = mesh.edges[edge]
+            # rotate edge only if 4 edges connected to the vertices of it
+            if not (len(mesh.ve[v[0]]) == 4 and len(mesh.ve[v[1]]) == 4):
+                continue
+            mesh = rotate_edges_around_vertex(mesh, edge)
+            count = count+1
+
+        return
 
 
 def slide_verts(mesh, prct):
@@ -217,6 +230,7 @@ def slide_verts(mesh, prct):
 
 def scale_verts(mesh, p=0.1):
     num_verts_to_change = int(p * len(mesh.vs))
+    random.seed(0)
     vs_ind_to_change = np.random.choice(len(mesh.vs), num_verts_to_change)
     eps = 1e-6
 
@@ -228,6 +242,7 @@ def scale_verts(mesh, p=0.1):
             # assumes uniform grid with step of 1
             max_step_before = -1+eps
             max_step_after = 1-eps
+            random.seed(0)
             new_grid = mesh.vs[ind, dim] + np.random.uniform(max_step_before,
                                                              max_step_after)
             new_grid = min(max(new_grid, min_val), max_val)
@@ -342,6 +357,7 @@ def extract_features(mesh):
         return extract_geometric_features(mesh)
     else:
         return extract_rgb_features(mesh)
+
 
 def extract_rgb_features(mesh):
     features = []
