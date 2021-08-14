@@ -22,8 +22,8 @@ class Img2MeshGenerator:
 
     def _create_vertices_pairs(self):
         pairs = []
-        for jvy in range(len(self.vy)):
-            for ivx in range(len(self.vx)):
+        for jvy in self.vy:
+            for ivx in self.vx:
                 pair = (ivx, jvy)
                 pairs.append(pair)
         return pairs
