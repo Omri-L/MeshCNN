@@ -117,7 +117,8 @@ class ClassifierModel:
 
     def get_accuracy(self, pred, labels):
         """computes accuracy for classification / segmentation """
-        if self.opt.dataset_mode == 'classification':
+        if self.opt.dataset_mode in \
+                ['classification', 'cifar10_classification']:
             correct = pred.eq(labels).sum()
         elif self.opt.dataset_mode == 'segmentation':
             correct = seg_accuracy(pred, self.soft_label, self.mesh)
