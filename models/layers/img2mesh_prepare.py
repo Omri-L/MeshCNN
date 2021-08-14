@@ -194,15 +194,11 @@ def post_augmentation(mesh, opt):
         num_rotations = int(mesh.edges_count * opt.rotate_edges)
         random.seed(0)
         edges = np.random.choice(mesh.edges_count, num_rotations)
-        count = 0
         for edge in edges:
-            # print('edge {}'.format(edge))
+            # print('post_aug_edge {}'.format(edge))
             v = mesh.edges[edge]
             # rotate edge only if 4 edges connected to the vertices of it
-            if not (len(mesh.ve[v[0]]) == 4 and len(mesh.ve[v[1]]) == 4):
-                continue
             mesh = rotate_edges_around_vertex(mesh, edge)
-            count = count+1
 
         return
 
@@ -239,9 +235,9 @@ def scale_verts(mesh, p=0.1):
         min_val = min(vs[:, dim])
         max_val = max(vs[:, dim])
         for ind in vs_ind_to_change:
-            # assumes uniform grid with step of 1
-            max_step_before = -1+eps
-            max_step_after = 1-eps
+            # assumes uniform grid with step of 2  # TODO change this
+            max_step_before = -2+eps
+            max_step_after = 2-eps
             random.seed(0)
             new_grid = mesh.vs[ind, dim] + np.random.uniform(max_step_before,
                                                              max_step_after)
