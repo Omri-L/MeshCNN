@@ -4,6 +4,8 @@ import ntpath
 from scipy.interpolate import interp2d
 import random
 from .mesh_rotation_utils import rotate_edges_around_vertex
+import torchvision.transforms as transforms
+from PIL import Image
 
 
 def fill_mesh(mesh2fill, file: str, opt):
@@ -62,7 +64,7 @@ def from_scratch(file, opt, img_data):
     mesh_data.v_mask = np.ones(len(mesh_data.vs), dtype=bool)
     faces, face_areas = remove_non_manifolds(mesh_data, faces)
     if opt.num_aug > 1:
-        faces = augmentation(mesh_data, opt, faces)
+        augmentation(mesh_data, opt)
     build_gemm(mesh_data, faces, face_areas)
     if opt.num_aug > 1:
         post_augmentation(mesh_data, opt)
@@ -183,10 +185,19 @@ def compute_face_normals_and_areas(mesh, faces):
 
 
 # Data augmentation methods
-def augmentation(mesh, opt, faces=None):
+def augmentation(mesh, opt):
     if hasattr(opt, 'scale_verts') and opt.scale_verts:
         scale_verts(mesh, opt.scale_verts)
-    return faces
+
+    if hasattr(opt, 'hr_flip_img') and opt.hr_flip_img:
+        hflip = transforms.RandomHorizontalFlip(opt.hr_flip_img)
+        mesh.img_data = np.array(hflip(Image.fromarray(mesh.img_data)))
+
+    if hasattr(opt, 'vr_flip_img') and opt.vr_flip_img:
+        vflip = transforms.RandomVerticalFlip(opt.vr_flip_img)
+        mesh.img_data = np.array(vflip(Image.fromarray(mesh.img_data)))
+
+    return
 
 
 def post_augmentation(mesh, opt):

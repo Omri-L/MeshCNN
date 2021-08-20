@@ -23,6 +23,8 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--rotate_edges', type=float, default=0, help='rotate edges around vertex')
         self.parser.add_argument('--slide_verts', type=float, default=0, help='percent vertices which will be shifted along the mesh surface')
         self.parser.add_argument('--flip_edges', type=float, default=0, help='percent of edges to randomly flip')
+        self.parser.add_argument('--hr_flip_img', type=float, default=0.5, help='probability of image data horizontally flip')
+        self.parser.add_argument('--vr_flip_img', type=float, default=0.5, help='probability of image data vertically flip')
         # tensorboard visualization
         self.parser.add_argument('--no_vis', action='store_true', help='will not use tensorboard')
         self.parser.add_argument('--verbose_plot', action='store_true', help='plots network weights, etc.')
