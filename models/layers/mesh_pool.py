@@ -53,34 +53,19 @@ class MeshPool(nn.Module):
         edge_groups = MeshUnion(mesh.edges_count, self.__fe.device)
 
         while mesh.edges_count > self.__out_target:
-            if len(queue) == 0:
-                print('building new queue')
-                queue = self.__build_queue(self.__fe[mesh_index, :, :mesh.edges_count], mesh.edges_count)
+            # if len(queue) == 0:
+            #     print('building new queue')
+            #     queue = self.__build_queue(self.__fe[mesh_index, :, :mesh.edges_count], mesh.edges_count)
             value, edge_id = heappop(queue)
             edge_id = int(edge_id)
-            print('pool edge_id %d' % edge_id)
+            # print('pool edge_id %d' % edge_id)
             if mask[edge_id]:
                 status = self.__pool_edge(mesh, edge_id, mask, edge_groups)
         mesh.clean(mask, edge_groups)
-        fe = edge_groups.rebuild_features(self.__fe[mesh_index], mask, self.__out_target)
+        fe = edge_groups.rebuild_features(self.__fe[mesh_index], mask,
+                                          self.__out_target)
         self.__updated_fe[mesh_index] = fe
-        print('finish pooling')
-
-    def clean_mesh_operations(self, mesh, mask, edge_groups):
-        """
-        This function implements the mesh cleaning process. In-order to keep
-        mesh with valid connectivity and without edge neighborhoods ambiguities
-        we keep mesh clear from "doublet" and "singlet" (TBD) edges.
-        """
-        # clear doublets and build new hood
-        doublet_cleared = self.clear_doublets(mesh, mask, edge_groups)
-        while doublet_cleared:
-            doublet_cleared = self.clear_doublets(mesh, mask, edge_groups)
-
-        # TBD
-        # clear singlets and build new hood
-        # self.clear_singlets(mesh, mask, edge_groups)
-        return
+        # print('finish pooling')
 
     def __pool_edge(self, mesh, edge_id, mask, edge_groups):
         """
@@ -106,8 +91,8 @@ class MeshPool(nn.Module):
                             False otherwise.
 
         """
-        # 1. Clean mesh operations
-        self.clean_mesh_operations(mesh, mask, edge_groups)
+        # 1. Pool mesh operations
+        self.pool_mesh_operations(mesh, mask, edge_groups)
 
         # Check if edge_id have boundaries
         if self.has_boundaries(mesh, edge_id):
@@ -153,6 +138,9 @@ class MeshPool(nn.Module):
         mesh, new_features_combination_dict, diag_vertices = \
             edge_rotations(u, e_u, v_e_u, mesh)
 
+        if diag_vertices is None:
+            return False
+
         # 3. collapse another 2 edges connected to the other vertex v and
         # reconnect other edges from v connection to u connection
         e_v = mesh.ve[v].copy()  # edges connected to vertex v
@@ -161,7 +149,8 @@ class MeshPool(nn.Module):
                                      edge_groups, mask)
 
         # 4. union edge groups
-        MeshPool.__union_groups_at_once(mesh, edge_groups, new_features_combination_dict)
+        MeshPool.__union_groups_at_once(mesh, edge_groups,
+                                        new_features_combination_dict)
         return True
 
     def collapse_other_vertex_v(self, mesh, u, v, e_v, diag_vertices,
@@ -178,7 +167,7 @@ class MeshPool(nn.Module):
         3. Re-connect all the other edges connected to v with u
         4. Re-build all relevant edges neighborhoods.
         """
-        if self.clear_doublets(mesh, mask, edge_groups, [v]):
+        if self.pool_doublets(mesh, mask, edge_groups, [v]):
             return
 
         old_mesh = deepcopy(mesh)
@@ -230,8 +219,9 @@ class MeshPool(nn.Module):
                 for e_collapse in e_to_collapse:
                     if np.any([h == e_collapse for h in old_hood]):
                         e_collapse_pos = \
-                        np.where([h == e_collapse for h in old_hood])[0][0]
-                        new_hood[e_collapse_pos] = collapsed_e_to_orig_e_dict[e_collapse]
+                            np.where([h == e_collapse for h in old_hood])[0][0]
+                        new_hood[e_collapse_pos] = collapsed_e_to_orig_e_dict[
+                            e_collapse]
 
         # now fix hood for the rotated edges
         for key in collapsed_e_to_orig_e_dict:
@@ -250,7 +240,7 @@ class MeshPool(nn.Module):
                 else:
                     new_hood[3:6] = old_mesh.gemm_edges[key, 3:6]
             else:
-                assert(False)
+                assert (False)
 
             for i, e in enumerate(new_hood):
                 if e in collapsed_e_to_orig_e_dict.keys():
@@ -266,36 +256,23 @@ class MeshPool(nn.Module):
         mesh.merge_vertices(u, v)
         return
 
-    def find_doublets(self, mesh, vertices):
+    def pool_mesh_operations(self, mesh, mask, edge_groups):
         """
-        Find doublet edges in the mesh structure.
-        If vertices list is not None - check only this list, otherwise - all
-        vertices in the mesh.
-        Definition: If a vertex v has only two non-boundary edges connected to
-        it, these two edges called "doublet edges".
+        This function implements the mesh cleaning process. In-order to keep
+        mesh with valid connectivity and without edge neighborhoods ambiguities
+        we keep mesh clear from "doublet" and "singlet" (TBD) edges.
         """
-        doublet_pair_edges = []
-        if vertices is None:
-            doublet_vertices = np.where(np.array([len(mesh.ve[j]) for j in range(len(mesh.ve))]) == 2)[0]
-            doublet_vertices = list(doublet_vertices)
-        else:
-            doublet_vertices_indices = np.where(np.array([len(mesh.ve[v]) for v in vertices]) == 2)[0]
-            doublet_vertices = [vertices[i] for i in doublet_vertices_indices]
+        # clear doublets and build new hood
+        doublet_cleared = self.pool_doublets(mesh, mask, edge_groups)
+        while doublet_cleared:
+            doublet_cleared = self.pool_doublets(mesh, mask, edge_groups)
 
-        if len(doublet_vertices) > 0:
-            doublet_pair_edges = [mesh.ve[v].copy() for v in doublet_vertices]
+        # TBD
+        # clear singlets and build new hood
+        # clear_singlets(mesh, mask, edge_groups)
+        return
 
-        # check if doublet has boundaries - if it has do not clear this doublet
-        doublet_pair_edges_copy = doublet_pair_edges.copy()
-        doublet_vertices_copy = doublet_vertices.copy()
-        for i, doublet_pair in enumerate(doublet_pair_edges_copy):
-            if np.any([has_boundaries_edge_only(mesh, d) for d in doublet_pair]):
-                doublet_pair_edges.remove(doublet_pair)
-                doublet_vertices.remove(doublet_vertices_copy[i])
-
-        return doublet_vertices, doublet_pair_edges
-
-    def clear_doublets(self, mesh, mask, edge_groups, vertices=None):
+    def pool_doublets(self, mesh, mask, edge_groups, vertices=None):
         """
         This function finds doublet configuration and removes it from the mesh.
         Args:
@@ -311,75 +288,27 @@ class MeshPool(nn.Module):
             boolean - True if doublet found and removed.
                       False - otherwise.
         """
-        doublet_vertices, doublet_pairs_edges = self.find_doublets(mesh, vertices)
+        doublet_vertices, doublet_pairs_edges = find_doublets(mesh, vertices)
         if len(doublet_vertices) == 0:
             return False
 
         for pair in doublet_pairs_edges:
-            old_mesh = deepcopy(mesh)
-            old_hood = old_mesh.gemm_edges[pair[0]]
-            replaced_edges = [e for e in old_hood[0:3] if e not in pair]
-            other_edges_to_fix = [e for e in old_hood[3:6] if e not in pair]
-            new_vertex = set(old_mesh.edges[replaced_edges[0]]).intersection(set(old_mesh.edges[replaced_edges[1]])).pop()
-
-            # re-build hood
-            # match doublet edge with replaced edge
-            doubelt_to_replaced_edge = dict()
-            v_e = set(old_mesh.edges[pair[0]])  # vertices of doublet edge
-            v_r = set(old_mesh.edges[replaced_edges[0]])  # vertices of potential replaced edge
-            mutual_v = v_e.intersection(v_r)
-            if len(mutual_v) == 1:
-                doubelt_to_replaced_edge[pair[0]] = replaced_edges[0]
-                doubelt_to_replaced_edge[pair[1]] = replaced_edges[1]
-            else:
-                doubelt_to_replaced_edge[pair[0]] = replaced_edges[1]
-                doubelt_to_replaced_edge[pair[1]] = replaced_edges[0]
+            doubelt_to_replaced_edge, doubelt_to_replaced_edge_other_side = \
+                clear_doublet_pair(mesh, mask, pair)
 
             # union groups for features
             for key in doubelt_to_replaced_edge.keys():
                 MeshPool.__union_groups(mesh, edge_groups, key,
                                         doubelt_to_replaced_edge[key])
 
-            # fix other edges hood
-            for edge in other_edges_to_fix:
-                new_hood = mesh.gemm_edges[edge]
-                for i, e in enumerate(new_hood):
-                    if e in doubelt_to_replaced_edge.keys():
-                        new_hood[i] = doubelt_to_replaced_edge[e]
-
-            # fix other side hood
-            doubelt_to_replaced_edge_other_side = dict()
-            v_e = set(old_mesh.edges[pair[0]])  # vertices of doublet edge
-            v_r = set(old_mesh.edges[other_edges_to_fix[0]])  # vertices of potential replaced edge
-            mutual_v = v_e.intersection(v_r)
-            if len(mutual_v) == 1:
-                doubelt_to_replaced_edge_other_side[pair[0]] = other_edges_to_fix[0]
-                doubelt_to_replaced_edge_other_side[pair[1]] = other_edges_to_fix[1]
-            else:
-                doubelt_to_replaced_edge_other_side[pair[0]] = other_edges_to_fix[1]
-                doubelt_to_replaced_edge_other_side[pair[1]] = other_edges_to_fix[0]
-
             # union groups for features
             for key in doubelt_to_replaced_edge_other_side.keys():
                 MeshPool.__union_groups(mesh, edge_groups, key,
-                                        doubelt_to_replaced_edge_other_side[key])
+                                        doubelt_to_replaced_edge_other_side[
+                                            key])
 
-            for edge in replaced_edges:
-                new_hood = mesh.gemm_edges[edge]
-                for i, e in enumerate(new_hood):
-                    if e in pair:
-                        new_hood[i] = doubelt_to_replaced_edge_other_side[e]
-
-            # fix hood order:
-            edges_list = replaced_edges + other_edges_to_fix
-            fix_mesh_hood_order(mesh, edges_list)
-
-            # fix sides
-            fix_mesh_sides(mesh, edges_list)
-
-            # remove doublet from mesh:
             for e in pair:
-                self.remove_edge(mesh, e, edge_groups, mask)
+                MeshPool.__remove_group(mesh, edge_groups, e)
 
         return True
 
@@ -409,14 +338,18 @@ class MeshPool(nn.Module):
         key_a, key_b, key_c, side_a, side_b, side_c, \
         other_side_a, other_side_b, other_side_c, \
         other_keys_a, other_keys_b, other_keys_c = info
-        shared_items_ab = MeshPool.__get_shared_items(other_keys_a, other_keys_b)
-        shared_items_ac = MeshPool.__get_shared_items(other_keys_a, other_keys_c)
-        shared_items_bc = MeshPool.__get_shared_items(other_keys_b, other_keys_c)
+        shared_items_ab = MeshPool.__get_shared_items(other_keys_a,
+                                                      other_keys_b)
+        shared_items_ac = MeshPool.__get_shared_items(other_keys_a,
+                                                      other_keys_c)
+        shared_items_bc = MeshPool.__get_shared_items(other_keys_b,
+                                                      other_keys_c)
         if len(shared_items_ab) <= 2 and len(shared_items_ac) <= 2 and \
                 len(shared_items_bc) <= 2:
             return True
         else:
-            assert(False)   # TODO: remove this - just to make sure we don't get here
+            assert (
+                False)  # TODO: remove this - just to make sure we don't get here
             return False
 
     @staticmethod

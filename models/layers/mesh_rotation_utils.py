@@ -16,6 +16,9 @@ def edge_rotations(u, e_u, v_e_u, mesh):
     diag_vertices, diag_vertex_to_edges_dict = \
         find_diag_vertices(mesh, u, e_u, v_e_u)
 
+    if len(diag_vertices) < len(e_u):  # not correct config
+        return mesh, None, None
+
     # 2. Rotate edges - for each edge goes from u - change the original
     # connection to the optional diagonal connection (direction should be
     # consistent for all the rotated edges)
@@ -312,6 +315,7 @@ def rotate_edges_around_vertex(mesh, edge_id):
     2. Check if the edges connected to u and v have boundaries.
     3. Rotate the edges connected to u and re-build their neighborhood.
     """
+
     # 1. Get edge info
     u, v_e_u, e_u, v, v_e_v, e_v = get_edge_hood_info(mesh, edge_id)
 
@@ -323,7 +327,7 @@ def rotate_edges_around_vertex(mesh, edge_id):
         return mesh
 
     # 3. Edges rotations around vertex u
-    mesh, _, _ = \
+    mesh, _, diag_vertices = \
         edge_rotations(u, e_u, v_e_u, mesh)
 
     return mesh
@@ -398,3 +402,142 @@ def get_all_vertices_of_edges_connected_to_vertex(mesh, vertex_u):
 
     return v_e_u, e_u
 
+
+def clean_mesh_operations(mesh, mask, edge_groups=None):
+    """
+    This function implements the mesh cleaning process. In-order to keep
+    mesh with valid connectivity and without edge neighborhoods ambiguities
+    we keep mesh clear from "doublet" and "singlet" (TBD) edges.
+    """
+    # clear doublets and build new hood
+    doublet_cleared = clear_doublets(mesh, mask, edge_groups)
+    while doublet_cleared:
+        doublet_cleared = clear_doublets(mesh, mask, edge_groups)
+
+    # TBD
+    # clear singlets and build new hood
+    # clear_singlets(mesh, mask, edge_groups)
+    return
+
+
+def find_doublets(mesh, vertices):
+    """
+    Find doublet edges in the mesh structure.
+    If vertices list is not None - check only this list, otherwise - all
+    vertices in the mesh.
+    Definition: If a vertex v has only two non-boundary edges connected to
+    it, these two edges called "doublet edges".
+    """
+    doublet_pair_edges = []
+    if vertices is None:
+        doublet_vertices = np.where(np.array([len(mesh.ve[j]) for j in range(len(mesh.ve))]) == 2)[0]
+        doublet_vertices = list(doublet_vertices)
+    else:
+        doublet_vertices_indices = np.where(np.array([len(mesh.ve[v]) for v in vertices]) == 2)[0]
+        doublet_vertices = [vertices[i] for i in doublet_vertices_indices]
+
+    if len(doublet_vertices) > 0:
+        doublet_pair_edges = [mesh.ve[v].copy() for v in doublet_vertices]
+
+    # check if doublet has boundaries - if it has do not clear this doublet
+    doublet_pair_edges_copy = doublet_pair_edges.copy()
+    doublet_vertices_copy = doublet_vertices.copy()
+    for i, doublet_pair in enumerate(doublet_pair_edges_copy):
+        if np.any([has_boundaries_edge_only(mesh, d) for d in doublet_pair]):
+            doublet_pair_edges.remove(doublet_pair)
+            doublet_vertices.remove(doublet_vertices_copy[i])
+
+    return doublet_vertices, doublet_pair_edges
+
+
+def clear_doublet_pair(mesh, mask, doublet_pair):
+
+    old_mesh = deepcopy(mesh)
+    old_hood = old_mesh.gemm_edges[doublet_pair[0]]
+    replaced_edges = [e for e in old_hood[0:3] if e not in doublet_pair]
+    other_edges_to_fix = [e for e in old_hood[3:6] if e not in doublet_pair]
+    new_vertex = set(old_mesh.edges[replaced_edges[0]]).intersection(
+        set(old_mesh.edges[replaced_edges[1]])).pop()
+
+    # re-build hood
+    # match doublet edge with replaced edge
+    doubelt_to_replaced_edge = dict()
+    v_e = set(old_mesh.edges[doublet_pair[0]])  # vertices of doublet edge
+    v_r = set(old_mesh.edges[
+                  replaced_edges[0]])  # vertices of potential replaced edge
+    mutual_v = v_e.intersection(v_r)
+    if len(mutual_v) == 1:
+        doubelt_to_replaced_edge[doublet_pair[0]] = replaced_edges[0]
+        doubelt_to_replaced_edge[doublet_pair[1]] = replaced_edges[1]
+    else:
+        doubelt_to_replaced_edge[doublet_pair[0]] = replaced_edges[1]
+        doubelt_to_replaced_edge[doublet_pair[1]] = replaced_edges[0]
+
+    # fix other edges hood
+    for edge in other_edges_to_fix:
+        new_hood = mesh.gemm_edges[edge]
+        for i, e in enumerate(new_hood):
+            if e in doubelt_to_replaced_edge.keys():
+                new_hood[i] = doubelt_to_replaced_edge[e]
+
+    # fix other side hood
+    doubelt_to_replaced_edge_other_side = dict()
+    v_e = set(old_mesh.edges[doublet_pair[0]])  # vertices of doublet edge
+    v_r = set(old_mesh.edges[other_edges_to_fix[
+        0]])  # vertices of potential replaced edge
+    mutual_v = v_e.intersection(v_r)
+    if len(mutual_v) == 1:
+        doubelt_to_replaced_edge_other_side[doublet_pair[0]] = other_edges_to_fix[0]
+        doubelt_to_replaced_edge_other_side[doublet_pair[1]] = other_edges_to_fix[1]
+    else:
+        doubelt_to_replaced_edge_other_side[doublet_pair[0]] = other_edges_to_fix[1]
+        doubelt_to_replaced_edge_other_side[doublet_pair[1]] = other_edges_to_fix[0]
+
+    for edge in replaced_edges:
+        new_hood = mesh.gemm_edges[edge]
+        for i, e in enumerate(new_hood):
+            if e in doublet_pair:
+                new_hood[i] = doubelt_to_replaced_edge_other_side[e]
+
+    # fix hood order:
+    edges_list = replaced_edges + other_edges_to_fix
+    fix_mesh_hood_order(mesh, edges_list)
+
+    # fix sides
+    fix_mesh_sides(mesh, edges_list)
+
+    # remove doublet from mesh:
+    for e in doublet_pair:
+        mask[e] = False
+        mesh.remove_edge(e)
+        mesh.edges[e] = [-1, -1]
+        mesh.edges_count -= 1
+        mesh.gemm_edges[e] = [-1, -1, -1, -1, -1, -1]
+
+    return doubelt_to_replaced_edge, doubelt_to_replaced_edge_other_side
+
+
+def clear_doublets(mesh, mask, vertices=None):
+    """
+    This function finds doublet configuration and removes it from the mesh.
+    Args:
+        mesh (Mesh): mesh structure
+        mask (ndarray): array of boolean which indicates which edge removed
+        edge_groups (MeshUnion): mesh union strcture contain all edges
+                                 groups of edge features combinations.
+        vertices (list, optional): if not None, check only this list of
+                                   vertices in the mesh.
+                                   Otherwise - check all mesh.
+
+    Returns:
+        boolean - True if doublet found and removed.
+                  False - otherwise.
+    """
+    doublet_vertices, doublet_pairs_edges = find_doublets(mesh, vertices)
+    if len(doublet_vertices) == 0:
+        return False
+
+    for pair in doublet_pairs_edges:
+        clear_doublet_pair(mesh, mask, pair)
+
+    return True
