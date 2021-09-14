@@ -13,9 +13,12 @@ class MeshCifar10(BaseDataset):
 
     def __init__(self, opt):
         BaseDataset.__init__(self, opt)
-        self.mesh_file = r'E:\Omri\FinalProject\QuadMesh\MeshCNN\datasets\cifar-10-batches-py\test.obj'  # TODO change
+        self.mesh_file = os.path.join(os.path.abspath(''),
+                                      'QuadMeshGen/uniform_mesh_16_16.obj')
         self.opt = opt
-        self.device = torch.device('cuda:{}'.format(opt.gpu_ids[0])) if opt.gpu_ids else torch.device('cpu')
+        self.device = torch.device(
+            'cuda:{}'.format(opt.gpu_ids[0])) if opt.gpu_ids else torch.device(
+            'cpu')
         self.root = opt.dataroot
 
         self.train = False
@@ -25,9 +28,10 @@ class MeshCifar10(BaseDataset):
         transform = transforms.Compose(
             [transforms.ToTensor(),
              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-        self.dataset = torchvision.datasets.CIFAR10(root=self.root, train=self.train,
-                                                download=True,
-                                                transform=transform)
+        self.dataset = torchvision.datasets.CIFAR10(root=self.root,
+                                                    train=self.train,
+                                                    download=True,
+                                                    transform=transform)
 
         self.dir = os.path.join(opt.dataroot)
         self.classes = self.dataset.classes
@@ -59,8 +63,9 @@ class MeshCifar10(BaseDataset):
             c_ind = self.dataset.class_to_idx[c]
             indices = np.where(np.array(self.dataset.targets) == c_ind)[0]
             indices = (np.random.choice(indices,
-                             int(np.ceil(desired_dataset_size / len(self.dataset.classes))),
-                             replace=False)).tolist()
+                                        int(np.ceil(desired_dataset_size / len(
+                                            self.dataset.classes))),
+                                        replace=False)).tolist()
             all_indices = all_indices + indices
 
         random.shuffle(all_indices)
@@ -90,8 +95,8 @@ class MeshCifar10(BaseDataset):
     # this is when the folders are organized by class...
     @staticmethod
     def find_classes(dir):
-        classes = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
+        classes = [d for d in os.listdir(dir) if
+                   os.path.isdir(os.path.join(dir, d))]
         classes.sort()
         class_to_idx = {classes[i]: i for i in range(len(classes))}
         return classes, class_to_idx
-
