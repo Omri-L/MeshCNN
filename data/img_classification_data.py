@@ -5,6 +5,9 @@ from util.util import is_mesh_file, pad
 from models.layers.mesh import Mesh
 import torchvision
 import torchvision.transforms as transforms
+import numpy as np
+import random
+
 
 class MeshCifar10(BaseDataset):
 
@@ -31,11 +34,42 @@ class MeshCifar10(BaseDataset):
         self.class_to_idx = self.dataset.class_to_idx
         # self.paths = self.make_dataset_by_class(self.dir, self.class_to_idx, opt.phase)
         self.nclasses = len(self.classes)
+
+        self.dataset_reduction(1)
+
         self.size = len(self.dataset.data)
         self.get_mean_std()
         # modify for network later.
         opt.nclasses = self.nclasses
         opt.input_nc = self.ninput_channels
+
+    def dataset_reduction(self, factor):
+        if factor == 1:
+            return
+
+        full_dataset_size = len(self.dataset.data)
+        desired_dataset_size = int(np.ceil(factor * full_dataset_size))
+
+        all_indices = []
+
+        np.random.seed(0)
+        random.seed(0)
+
+        for c in self.dataset.class_to_idx:
+            c_ind = self.dataset.class_to_idx[c]
+            indices = np.where(np.array(self.dataset.targets) == c_ind)[0]
+            indices = (np.random.choice(indices,
+                             int(np.ceil(desired_dataset_size / len(self.dataset.classes))),
+                             replace=False)).tolist()
+            all_indices = all_indices + indices
+
+        random.shuffle(all_indices)
+        self.dataset.targets = [self.dataset.targets[i] for i in all_indices]
+        self.dataset.data = [self.dataset.data[i] for i in all_indices]
+
+        np.random.seed()
+        random.seed()
+        return
 
     def __getitem__(self, index):
         data = self.dataset.data[index]
