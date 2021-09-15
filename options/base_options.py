@@ -13,7 +13,7 @@ class BaseOptions:
         # data params
         self.parser.add_argument('--dataroot', required=True, help='path to meshes (should have subfolders train, test)')
         self.parser.add_argument('--dataset_mode', choices={"classification", "segmentation", "cifar10_classification"}, default='classification')
-        self.parser.add_argument('--ninput_edges', type=int, default=750, help='# of input edges (will include dummy edges)')
+        self.parser.add_argument('--ninput_edges', type=int, default=480, help='# of input edges (will include dummy edges)')
         self.parser.add_argument('--max_dataset_size', type=int, default=float("inf"), help='Maximum number of samples per epoch')
         # network params
         self.parser.add_argument('--batch_size', type=int, default=16, help='input batch size')
@@ -27,7 +27,7 @@ class BaseOptions:
         self.parser.add_argument('--init_type', type=str, default='normal', help='network initialization [normal|xavier|kaiming|orthogonal]')
         self.parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')
         # general params
-        self.parser.add_argument('--num_threads', default=1, type=int, help='# threads for loading data')
+        self.parser.add_argument('--num_threads', default=3, type=int, help='# threads for loading data')
         self.parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
         self.parser.add_argument('--name', type=str, default='debug', help='name of the experiment. It decides where to store samples and models')
         self.parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
