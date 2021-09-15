@@ -7,18 +7,28 @@ import torchvision
 import torchvision.transforms as transforms
 import numpy as np
 import random
+import shutil
 
 
 class MeshCifar10(BaseDataset):
 
     def __init__(self, opt):
         BaseDataset.__init__(self, opt)
+        self.opt = opt
+        self.dir = os.path.join(opt.dataroot)
+
         self.mesh_file = os.path.join(os.path.abspath(''),
                                       'QuadMeshGen/uniform_mesh_16_16.obj')
-        self.opt = opt
+        mesh_file_new_path = os.path.join(os.path.abspath(''), self.dir,
+                                          os.path.basename(self.mesh_file))
+        shutil.copyfile(self.mesh_file, mesh_file_new_path)
+        self.mesh_file = mesh_file_new_path
+
         self.device = torch.device(
+
             'cuda:{}'.format(opt.gpu_ids[0])) if opt.gpu_ids else torch.device(
             'cpu')
+
         self.root = opt.dataroot
 
         self.train = False
@@ -33,7 +43,6 @@ class MeshCifar10(BaseDataset):
                                                     download=True,
                                                     transform=transform)
 
-        self.dir = os.path.join(opt.dataroot)
         self.classes = self.dataset.classes
         self.class_to_idx = self.dataset.class_to_idx
         # self.paths = self.make_dataset_by_class(self.dir, self.class_to_idx, opt.phase)
