@@ -17,13 +17,6 @@ class MeshCifar10(BaseDataset):
         self.opt = opt
         self.dir = os.path.join(opt.dataroot)
 
-        self.mesh_file = os.path.join(os.path.abspath(''),
-                                      'QuadMeshGen/uniform_mesh_16_16.obj')
-        mesh_file_new_path = os.path.join(os.path.abspath(''), self.dir,
-                                          os.path.basename(self.mesh_file))
-        shutil.copyfile(self.mesh_file, mesh_file_new_path)
-        self.mesh_file = mesh_file_new_path
-
         self.device = torch.device(
 
             'cuda:{}'.format(opt.gpu_ids[0])) if opt.gpu_ids else torch.device(
@@ -48,7 +41,14 @@ class MeshCifar10(BaseDataset):
         # self.paths = self.make_dataset_by_class(self.dir, self.class_to_idx, opt.phase)
         self.nclasses = len(self.classes)
 
-        self.dataset_reduction(1)
+        self.dataset_reduction(opt.dataset_frac)
+
+        self.mesh_file = os.path.join(os.path.abspath(''),
+                                      'QuadMeshGen/uniform_mesh_16_16.obj')
+        mesh_file_new_path = os.path.join(os.path.abspath(''), self.dir,
+                                          os.path.basename(self.mesh_file))
+        shutil.copyfile(self.mesh_file, mesh_file_new_path)
+        self.mesh_file = mesh_file_new_path
 
         self.size = len(self.dataset.data)
         self.get_mean_std()
@@ -56,8 +56,8 @@ class MeshCifar10(BaseDataset):
         opt.nclasses = self.nclasses
         opt.input_nc = self.ninput_channels
 
-    def dataset_reduction(self, factor):
-        if factor == 1:
+    def dataset_reduction(self, factor: float):
+        if factor == 1.0:
             return
 
         full_dataset_size = len(self.dataset.data)
