@@ -83,18 +83,34 @@ class ClassifierModel:
         state_dict = torch.load(load_path, map_location=str(self.device))
         if hasattr(state_dict, '_metadata'):
             del state_dict._metadata
-        net.load_state_dict(state_dict)
 
+        if len(state_dict) > 4:
+            net.load_state_dict(state_dict)
+        else:
+            net.load_state_dict(state_dict['model_params'])
+            if self.is_train:
+                if 'scheduler' in state_dict.keys():
+                    self.scheduler.load_state_dict(state_dict['scheduler'])
+                if 'optimizer' in state_dict.keys():
+                    self.optimizer.load_state_dict(state_dict['optimizer'])
+                if 'epoch' in state_dict.keys():
+                    which_epoch = (state_dict['epoch'])
 
     def save_network(self, which_epoch):
         """save model to disk"""
         save_filename = '%s_net.pth' % (which_epoch)
         save_path = join(self.save_dir, save_filename)
         if len(self.gpu_ids) > 0 and torch.cuda.is_available():
-            torch.save(self.net.module.cpu().state_dict(), save_path)
+            torch.save({'model_params': self.net.module.cpu().state_dict(),
+                        'epoch': which_epoch,
+                        'scheduler': self.scheduler.state_dict(),
+                        'optimizer': self.optimizer.state_dict()}, save_path)
             self.net.cuda(self.gpu_ids[0])
         else:
-            torch.save(self.net.cpu().state_dict(), save_path)
+            torch.save({'model_params': self.net.cpu().state_dict(),
+                        'epoch': which_epoch,
+                        'scheduler': self.scheduler.state_dict(),
+                        'optimizer': self.optimizer.state_dict()}, save_path)
 
     def update_learning_rate(self):
         """update learning rate (called once every epoch)"""
