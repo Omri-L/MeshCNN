@@ -5,10 +5,8 @@ import ntpath
 
 def fill_mesh(mesh2fill, file: str, opt):
     load_path = get_mesh_path(file, opt.num_aug)
-    file = r'E:\Omri\FinalProject\QuadMesh\ModelNet40\bathtub\train\bathtub_0004_manifold_clean_quad.obj'  # TODO: remove!!!
     if os.path.exists(load_path):
-        # mesh_data = np.load(load_path, encoding='latin1', allow_pickle=True)
-        mesh_data = from_scratch(file, opt)
+        mesh_data = np.load(load_path, encoding='latin1', allow_pickle=True)
     else:
         mesh_data = from_scratch(file, opt)
         np.savez_compressed(load_path, gemm_edges=mesh_data.gemm_edges, vs=mesh_data.vs, edges=mesh_data.edges,
@@ -59,6 +57,7 @@ def from_scratch(file, opt):
     if opt.num_aug > 1:
         faces = augmentation(mesh_data, opt, faces)
     build_gemm(mesh_data, faces, face_areas)
+    # print('mesh edges count %d' % mesh_data.edges_count)
     if opt.num_aug > 1:
         post_augmentation(mesh_data, opt)
     mesh_data.features = extract_features(mesh_data)
