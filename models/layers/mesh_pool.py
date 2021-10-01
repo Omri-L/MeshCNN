@@ -46,16 +46,12 @@ class MeshPool(nn.Module):
         mesh = self.__meshes[mesh_index]
         queue = self.__build_queue(self.__fe[mesh_index, :, :mesh.edges_count],
                                    mesh.edges_count)
-        # recycle = []
-        # last_queue_len = len(queue)
+        # print('pooling target - %d, mesh filename: %s' % (self.__out_target, mesh.filename))
         last_count = mesh.edges_count + 1
         mask = np.ones(mesh.edges_count, dtype=np.bool)
         edge_groups = MeshUnion(mesh.edges_count, self.__fe.device)
 
         while mesh.edges_count > self.__out_target:
-            # if len(queue) == 0:
-            #     print('building new queue')
-            #     queue = self.__build_queue(self.__fe[mesh_index, :, :mesh.edges_count], mesh.edges_count)
             value, edge_id = heappop(queue)
             edge_id = int(edge_id)
             # print('pool edge_id %d' % edge_id)
@@ -105,6 +101,7 @@ class MeshPool(nn.Module):
 
             # 3. Edge collapse algorithm
             status = self.edge_collapse(edge_id, mesh, mask, edge_groups)
+            self.pool_mesh_operations(mesh, mask, edge_groups)
             return status
         else:
             return False
@@ -349,7 +346,7 @@ class MeshPool(nn.Module):
             return True
         else:
             assert (
-                False)  # TODO: remove this - just to make sure we don't get here
+                False)  # TODO: we shouldn't get here.
             return False
 
     @staticmethod
