@@ -74,12 +74,12 @@ class Mesh:
         self.pool_count += 1
         self.export()
 
-
     def export(self, file=None, vcolor=None):
         if file is None:
             if self.export_folder:
                 filename, file_extension = os.path.splitext(self.filename)
                 file = '%s/%s_%d%s' % (self.export_folder, filename, self.pool_count, file_extension)
+                # print('export file %s' % file)
             else:
                 return
         faces = []
@@ -90,18 +90,21 @@ class Mesh:
         for edge_index in range(len(gemm)):
             cycles = self.__get_cycle(gemm, edge_index)
             for cycle in cycles:
+                # print('edge_index: %d' % edge_index)
                 faces.append(self.__cycle_to_face(cycle, new_indices))
         with open(file, 'w+') as f:
             for vi, v in enumerate(vs):
                 vcol = ' %f %f %f' % (vcolor[vi, 0], vcolor[vi, 1], vcolor[vi, 2]) if vcolor is not None else ''
                 f.write("v %f %f %f%s\n" % (v[0], v[1], v[2], vcol))
             for face_id in range(len(faces) - 1):
-                f.write("f %d %d %d\n" % (faces[face_id][0] + 1, faces[face_id][1] + 1, faces[face_id][2] + 1))
-            f.write("f %d %d %d" % (faces[-1][0] + 1, faces[-1][1] + 1, faces[-1][2] + 1))
+                f.write("f %d %d %d %d\n" % (faces[face_id][0] + 1, faces[face_id][1] + 1,
+                                             faces[face_id][2] + 1, faces[face_id][3] + 1))
+            f.write("f %d %d %d %d" % (faces[-1][0] + 1, faces[-1][1] + 1,
+                                       faces[-1][2] + 1, faces[-1][3] + 1))
             for edge in self.edges:
                 f.write("\ne %d %d" % (new_indices[edge[0]] + 1, new_indices[edge[1]] + 1))
 
-    def export_segments(self, segments):
+    def export_segments(self, segments): # TODO
         if not self.export_folder:
             return
         cur_segments = segments
@@ -126,29 +129,31 @@ class Mesh:
                 cur_segments = segments[:len(self.history_data['edges_mask'][i])]
                 cur_segments = cur_segments[self.history_data['edges_mask'][i]]
 
-    def __get_cycle(self, gemm, edge_id): # TODO
+    def __get_cycle(self, gemm, edge_id):
         cycles = []
         for j in range(2):
-            next_side = start_point = j * 2
+            next_side = start_point = j * 3
             next_key = edge_id
             if gemm[edge_id, start_point] == -1:
                 continue
             cycles.append([])
-            for i in range(3):
+            for i in range(4):
                 tmp_next_key = gemm[next_key, next_side]
                 tmp_next_side = self.sides[next_key, next_side]
-                tmp_next_side = tmp_next_side + 1 - 2 * (tmp_next_side % 2)
+                tmp_next_side = tmp_next_side + 2 - 2 * (tmp_next_side % 3)
                 gemm[next_key, next_side] = -1
-                gemm[next_key, next_side + 1 - 2 * (next_side % 2)] = -1
+                gemm[next_key, next_side + 1 - 2 * (next_side % 3)] = -1
+                gemm[next_key, next_side + 2 - 2 * (next_side % 3)] = -1
                 next_key = tmp_next_key
                 next_side = tmp_next_side
                 cycles[-1].append(next_key)
         return cycles
 
-    def __cycle_to_face(self, cycle, v_indices): # TODO
+    def __cycle_to_face(self, cycle, v_indices):
         face = []
-        for i in range(3):
-            v = list(set(self.edges[cycle[i]]) & set(self.edges[cycle[(i + 1) % 3]]))[0]
+        # print('cycle: %d %d %d %d' %(cycle[0], cycle[1], cycle[2], cycle[3]))
+        for i in range(4):
+            v = list(set(self.edges[cycle[i]]) & set(self.edges[cycle[(i + 1) % 4]]))[0]
             face.append(v_indices[v])
         return face
 
