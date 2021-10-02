@@ -1,6 +1,8 @@
 import numpy as np
 import os
 import ntpath
+import random
+from .mesh_rotation_utils import rotate_edges_around_vertex
 
 
 def fill_mesh(mesh2fill, file: str, opt):
@@ -181,12 +183,22 @@ def compute_face_normals_and_areas(mesh, faces):
 def augmentation(mesh, opt, faces=None):
     if hasattr(opt, 'scale_verts') and opt.scale_verts:
         scale_verts(mesh)
-    if hasattr(opt, 'flip_edges') and opt.flip_edges:
-        faces = flip_edges(mesh, opt.flip_edges, faces)
+    # if hasattr(opt, 'flip_edges') and opt.flip_edges:
+    #     faces = flip_edges(mesh, opt.flip_edges, faces)
     return faces
 
 
 def post_augmentation(mesh, opt):
+    if hasattr(opt, 'rotate_edges') and opt.rotate_edges:
+        num_rotations = int(mesh.edges_count * opt.rotate_edges)
+        random.seed(0)
+        edges = np.random.choice(mesh.edges_count, num_rotations)
+        for edge in edges:
+            # print('post_aug_edge {}'.format(edge))
+            v = mesh.edges[edge]
+            # rotate edge only if 4 edges connected to the vertices of it
+            mesh = rotate_edges_around_vertex(mesh, edge)
+
     if hasattr(opt, 'slide_verts') and opt.slide_verts:
         slide_verts(mesh, opt.slide_verts)
 
