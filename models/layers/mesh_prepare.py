@@ -230,6 +230,70 @@ def angles_from_faces(mesh, edge_faces, faces):
     return angles
 
 
+def filp_edges_find_new_edge_quads(edge_info, faces, edge_faces):
+    optional_vertices_one_face = list(
+        set(faces[edge_info[2]]) - set(edge_info[0:2]))
+    optional_vertices_second_face = list(
+        set(faces[edge_info[3]]) - set(edge_info[0:2]))
+    vertex_one_face = optional_vertices_one_face[0]
+
+    edge_vertex_connections = dict()
+
+    all_connections_options = optional_vertices_one_face + optional_vertices_second_face
+    for vertex_edge_info in edge_info[0:2]:
+        edge_vertex_connections[vertex_edge_info] = []
+        for k, edge_face in enumerate(edge_faces):
+            if vertex_edge_info not in edge_face:
+                continue
+            for option in all_connections_options:
+                if edge_face[0] == min(vertex_edge_info, option) and \
+                        edge_face[1] == max(vertex_edge_info, option):
+                    edge_vertex_connections[vertex_edge_info].append(option)
+                    all_connections_options.remove(option)
+
+    new_vertex_first = edge_vertex_connections[edge_info[0]][0]
+    for v in edge_vertex_connections[edge_info[1]]:
+        if v in optional_vertices_second_face:
+            new_vertex_second = v
+            break
+
+    new_edge = tuple(sorted([new_vertex_first, new_vertex_second]))
+    return new_edge, edge_vertex_connections
+
+
+def flip_edges_build_new_vertices_faces_quad(edge_info, new_edge,
+                                              edge_vertex_connections):
+
+    first_face = [edge_info[1]]
+    connections_options = edge_vertex_connections[first_face[0]]
+    last_vertex = -1
+    for option in connections_options:
+        if option in new_edge:
+            new_edge_copy = list(new_edge).copy()
+            first_face.append(option)
+            new_edge_copy.remove(option)
+            first_face.append(new_edge_copy[0])
+        else:
+            last_vertex = option
+    first_face.append(last_vertex)
+
+    second_face = [edge_info[0]]
+    connections_options = edge_vertex_connections[second_face[0]]
+    last_vertex = -1
+    for option in connections_options:
+        if option in new_edge:
+            new_edge_copy = list(new_edge).copy()
+            second_face.append(option)
+            new_edge_copy.remove(option)
+            second_face.append(new_edge_copy[0])
+        else:
+            last_vertex = option
+    second_face.append(last_vertex)
+
+    new_faces = np.array([first_face, second_face])
+    return new_faces
+
+
 def flip_edges(mesh, prct, faces):
     edge_count, edge_faces, edges_dict = get_edge_faces(faces)
     dihedral = angles_from_faces(mesh, edge_faces[:, 2:], faces)
@@ -245,11 +309,11 @@ def flip_edges(mesh, prct, faces):
             edge_info = edge_faces[edge_key]
             if edge_info[3] == -1:
                 continue
-            new_edge = tuple(sorted(list(set(faces[edge_info[2]]) ^ set(faces[edge_info[3]]))))
+            new_edge, edge_vertex_connections = \
+                filp_edges_find_new_edge_quads(edge_info, faces, edge_faces)
             if new_edge in edges_dict:
                 continue
-            new_faces = np.array(
-                [[edge_info[1], new_edge[0], new_edge[1]], [edge_info[0], new_edge[0], new_edge[1]]])
+            new_faces = flip_edges_build_new_vertices_faces_quad(edge_info, new_edge, edge_vertex_connections)
             if check_area(mesh, new_faces):
                 del edges_dict[(edge_info[0], edge_info[1])]
                 edge_info[:2] = [new_edge[0], new_edge[1]]
@@ -258,8 +322,8 @@ def flip_edges(mesh, prct, faces):
                 rebuild_face(faces[edge_info[3]], new_faces[1])
                 for i, face_id in enumerate([edge_info[2], edge_info[3]]):
                     cur_face = faces[face_id]
-                    for j in range(3):
-                        cur_edge = tuple(sorted((cur_face[j], cur_face[(j + 1) % 3])))
+                    for j in range(4):
+                        cur_edge = tuple(sorted((cur_face[j], cur_face[(j + 1) % 4])))
                         if cur_edge != new_edge:
                             cur_edge_key = edges_dict[cur_edge]
                             for idx, face_nb in enumerate(
@@ -273,7 +337,7 @@ def flip_edges(mesh, prct, faces):
 
 def rebuild_face(face, new_face):
     new_point = list(set(new_face) - set(face))[0]
-    for i in range(3):
+    for i in range(4):
         if face[i] not in new_face:
             face[i] = new_point
             break
@@ -297,16 +361,12 @@ def get_edge_faces(faces):
             if cur_edge not in edge2keys:
                 edge2keys[cur_edge] = edge_count
                 edge_count += 1
-                edge_faces.append(np.array([cur_edge[0], cur_edge[1], -1, -1, -1, -1]))
+                edge_faces.append(np.array([cur_edge[0], cur_edge[1], -1, -1]))
             edge_key = edge2keys[cur_edge]
             if edge_faces[edge_key][2] == -1:
                 edge_faces[edge_key][2] = face_id
-            elif edge_faces[edge_key][3] == -1:
-                edge_faces[edge_key][3] = face_id
-            elif edge_faces[edge_key][4] == -1:
-                edge_faces[edge_key][4] = face_id
             else:
-                edge_faces[edge_key][5] = face_id
+                edge_faces[edge_key][3] = face_id
     return edge_count, np.array(edge_faces), edge2keys
 
 
