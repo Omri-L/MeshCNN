@@ -2,6 +2,7 @@ import torch
 from . import networks
 from os.path import join
 from util.util import seg_accuracy, print_network
+from sklearn.metrics import confusion_matrix
 
 
 class ClassifierModel:
@@ -118,7 +119,7 @@ class ClassifierModel:
         lr = self.optimizer.param_groups[0]['lr']
         print('learning rate = %.7f' % lr)
 
-    def test(self):
+    def test(self, all_labels=None):
         """tests model
         returns: number correct and total number
         """
@@ -129,7 +130,12 @@ class ClassifierModel:
             label_class = self.labels
             self.export_segmentation(pred_class.cpu())
             correct = self.get_accuracy(pred_class, label_class)
-        return correct, len(label_class)
+            if all_labels is not None:
+                conf_mat = confusion_matrix(label_class.cpu(), pred_class.cpu(), all_labels)
+            else:
+                conf_mat = None
+        return correct, len(label_class), conf_mat
+
 
     def get_accuracy(self, pred, labels):
         """computes accuracy for classification / segmentation """
