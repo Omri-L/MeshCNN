@@ -79,12 +79,9 @@ def fill_from_file(mesh, file):
             vs.append([float(v) for v in splitted_line[1:4]])
         elif splitted_line[0] == 'f':
             face_vertex_ids = [int(c.split('/')[0]) for c in splitted_line[1:]]
-            assert (len(face_vertex_ids) == 4 or len(face_vertex_ids) == 3)
+            assert (len(face_vertex_ids) == 4)
             face_vertex_ids = [(ind - 1) if (ind >= 0) else (len(vs) + ind)
                                for ind in face_vertex_ids]
-            if len(face_vertex_ids) == 3:
-                # face_vertex_ids.append(-1)
-                continue
             faces.append(face_vertex_ids)
     f.close()
     vs = np.asarray(vs)
