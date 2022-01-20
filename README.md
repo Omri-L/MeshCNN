@@ -73,6 +73,4 @@ Original code from [MeshCNN](https://github.com/ranahanocka/MeshCNN.git).
 
 This code design was adopted from [pytorch-CycleGAN-and-pix2pix](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix).
 
-Quad mesh illustration images are from: [human_link](https://3dmodelsz.blogspot.com/2020/03/3d-human-mesh.html), [penguin_link](https://3docean.net/item/penguin-base-mesh/9190779)
-
-<img src='docs/imgs/penguin.png' align="left" width=160>
+Quad mesh illustration images are from: [human_link](https://3dmodelsz.blogspot.com/2020/03/3d-human-mesh.html)
